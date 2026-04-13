@@ -119,6 +119,21 @@
     color: #555;
   }
 
+  /* ongoing project — no link, lighter tone */
+  .entry-title-ongoing {
+    font-size: clamp(1.05rem, 2.2vw, 1.5rem);
+    font-weight: 700;
+    color: var(--dim);
+    line-height: 1.15;
+  }
+
+  .entry-contact {
+    font-size: 10px;
+    color: var(--dim);
+    font-style: italic;
+    margin-left: 0.4rem;
+  }
+
   /* inline descriptor — small, dim, runs after or below title */
   .entry-meta {
     font-size: 11px;
@@ -126,6 +141,16 @@
     font-weight: 400;
     line-height: 1.6;
     margin-top: 0.1rem;
+  }
+
+  .entry-meta a {
+    color: var(--dim);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .entry-meta a:hover {
+    color: var(--mid);
   }
 
   /* inline status tag — like "detroit" after a name */
@@ -225,14 +250,13 @@
 <div class="name-sub"></div>
 
 <div class="contact-line">
-  <a href="mailto:Dylanjelliott@pm.me"></a><br>
-  <a href="https://suum.studio" target="_blank"></a>
-  <!-- &nbsp;&nbsp;<a href="#" target="_blank">@phylexia</a> -->
+  Mail: <a href="mailto:Dylanjelliott@pm.me">phylexia@pm.me</a><br>
+  Instagram: <a href="https://www.instagram.com/phylex.ia" target="_blank">@phylex.ia</a>
 </div>
 
 <div class="block" style="margin-top:1.2rem;">
   <div class="info-block" style="max-width:340px;">
-    Need to think of things to put here....
+    
   </div>
 </div>
 
@@ -243,24 +267,18 @@
   <div class="ghost-label">Projects</div>
 
   <div class="entry">
-    <a href="spectral-infrasounds.pdf" target="_blank">
-      <div class="entry-title">Spectral Infrasounds: An Taibhse sa Mheaisín<span class="tag">ongoing</span></div>
-    </a>
-    <div class="entry-meta">Investigation, Transduction, Fabulation<span class="tag"></span></div>
+    <div class="entry-title-ongoing">Spectral Infrasounds: An Taibhse sa Mheaisín<span class="tag">ongoing</span></div>
+    <div class="entry-meta">Investigation, Transduction, Fabulation<span class="entry-contact">— enquire for access</span></div>
   </div>
 
   <div class="entry">
-    <a href="set-woolwich.pdf" target="_blank">
-      <div class="entry-title">SET Woolwich Archive <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">ongoing</span></div>
-    </a>
-    <div class="entry-meta">Spatial Awareness Program<span class="tag"></span></div>
+    <div class="entry-title-ongoing">SET Woolwich Archive<span class="tag">ongoing</span></div>
+    <div class="entry-meta">Spatial Awareness Program<span class="entry-contact">— enquire for access</span></div>
   </div>
 
   <div class="entry">
-    <a href="muir-archive.pdf" target="_blank">
-      <div class="entry-title">Muir Art Archive<span class="tag">ongoing</span></div>
-    </a>
-    <div class="entry-meta">Restorative Publication<span class="tag"></span></div>
+    <div class="entry-title-ongoing">Muir Art Archive<span class="tag">ongoing</span></div>
+    <div class="entry-meta">Restorative Publication<span class="entry-contact">— enquire for access</span></div>
   </div>
 
   <div class="entry">
@@ -271,7 +289,7 @@
   </div>
 
   <div class="entry">
-    <a href="" target="_blank">
+    <a href="https://www.instagram.com/thinkinginadream" target="_blank">
       <div class="entry-title">Thinking in a Dream <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2025</span></div>
     </a>
     <div class="entry-meta">Visual Design<span class="tag"></span></div>
@@ -285,14 +303,14 @@
   </div>
 
   <div class="entry">
-    <a href="files/Our City Chambers.pdf" target="_blank">
+    <a href="https://ourcitychambers.glasgowheritage.org.uk/" target="_blank">
       <div class="entry-title">Our City Chambers <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2023</span></div>
     </a>
-    <div class="entry-meta">Digital Heritage Resource<span class="tag"></span></div>
+    <div class="entry-meta">Digital Heritage Resource · <a href="files/Our City Chambers.pdf" target="_blank">PDF</a></div>
   </div>
 
   <div class="entry">
-    <a href="The Knight Map.pdf" target="_blank">
+    <a href="https://suum.studio/branding-graphics-and-web/the-knight-map" target="_blank">
       <div class="entry-title">The Knight Map <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2023</span></div>
     </a>
     <div class="entry-meta">Exhibition<span class="tag"></span></div>
