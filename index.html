@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dylan J. Elliott</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f2ed;
+    --ghost: rgba(0,0,0,0.12);   /* large ghosted labels */
+    --dim:   #aaa;               /* descriptors */
+    --mid:   #555;               /* secondary info */
+    --bold:  #111;               /* clickable / primary */
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--bold);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 2.5rem 2.5rem 5rem;
+    max-width: 1100px;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* ── splat float ── */
+  .splat {
+    float: right;
+    width: 44%;
+    max-width: 560px;
+    aspect-ratio: 4/3;
+    margin: 0 0 2rem 2.5rem;
+    background: #e8e5e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #bbb;
+    letter-spacing: 0.06em;
+  }
+
+  .splat iframe {
+    width: 100%; height: 100%; border: none; display: block;
+  }
+
+  /* ── name block ── */
+  .name {
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--bold);
+    margin-bottom: 0.2rem;
+  }
+
+  .name-sub {
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 0.15rem;
+  }
+
+  .contact-line {
+    font-size: 12px;
+    color: var(--dim);
+    margin-top: 0.6rem;
+    line-height: 1.8;
+  }
+
+  .contact-line a {
+    color: var(--mid);
+  }
+
+  .contact-line a:hover {
+    color: var(--bold);
+  }
+
+  /* ── section block ── */
+  .block {
+    margin-top: 1.8rem;
+    position: relative;
+  }
+
+  /* ghosted large label — like the day names on the poster */
+  .ghost-label {
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-weight: 700;
+    color: var(--ghost);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.1rem;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* ── row: ghost label + bold title + small descriptors inline ── */
+  .entry {
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  /* bold clickable title */
+  .entry-title {
+    font-size: clamp(1.05rem, 2.2vw, 1.5rem);
+    font-weight: 700;
+    color: var(--bold);
+    line-height: 1.15;
+    cursor: pointer;
+    transition: color 0.12s;
+  }
+
+  .entry-title:hover {
+    color: #555;
+  }
+
+  /* inline descriptor — small, dim, runs after or below title */
+  .entry-meta {
+    font-size: 11px;
+    color: var(--dim);
+    font-weight: 400;
+    line-height: 1.6;
+    margin-top: 0.1rem;
+  }
+
+  /* inline status tag — like "detroit" after a name */
+  .tag {
+    font-size: 10px;
+    color: var(--dim);
+    font-weight: 400;
+    vertical-align: baseline;
+    margin-left: 0.3rem;
+  }
+
+  /* ── experience rows ── */
+  .exp-title {
+    font-size: clamp(0.95rem, 2vw, 1.3rem);
+    font-weight: 700;
+    color: var(--bold);
+    transition: color 0.12s;
+  }
+
+  .exp-org {
+    font-size: 11px;
+    color: var(--dim);
+    margin-left: 0.3rem;
+  }
+
+  .exp-date {
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .exp-body {
+    font-size: 11px;
+    color: var(--mid);
+    line-height: 1.7;
+    margin-top: 0.15rem;
+    max-width: 600px;
+  }
+
+  /* ── small info block ── */
+  .info-block {
+    font-size: 11px;
+    color: var(--mid);
+    line-height: 1.9;
+    margin-top: 0.3rem;
+  }
+
+  .info-block strong {
+    color: var(--bold);
+    font-weight: 700;
+  }
+
+  /* ── divider ── */
+  .rule {
+    border: none;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    margin: 2rem 0;
+    clear: both;
+    width: calc(100vw - 5rem);
+  }
+
+  /* ── two col for skills/edu ── */
+  .two-col {
+    display: flex;
+    gap: 4rem;
+    flex-wrap: wrap;
+  }
+
+  .two-col > div { flex: 1; min-width: 220px; }
+
+  /* ── mobile ── */
+  @media (max-width: 620px) {
+    body { padding: 1.5rem 1.5rem 4rem; }
+    .splat {
+      float: none;
+      width: 100%;
+      max-width: 100%;
+      margin: 0 0 1.5rem 0;
+      aspect-ratio: 16/9;
+    }
+    .two-col { flex-direction: column; gap: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- splat floated right, everything wraps left -->
+<div class="splat">
+  <span>[ SAP-001 / SET Woolwich / 01_aghartha ]</span>
+  <!--
+  <iframe src="YOUR_SUPERSPLAT_URL" allowfullscreen></iframe>
+  -->
+</div>
+
+<!-- name -->
+<div class="name">Phylexia</div>
+<div class="name-sub">Dylan J. Elliott<span class="tag">London, UK</span></div>
+<div class="name-sub"></div>
+
+<div class="contact-line">
+  <a href="mailto:Dylanjelliott@pm.me"></a><br>
+  <a href="https://suum.studio" target="_blank"></a>
+  <!-- &nbsp;&nbsp;<a href="#" target="_blank">@phylexia</a> -->
+</div>
+
+<div class="block" style="margin-top:1.2rem;">
+  <div class="info-block" style="max-width:340px;">
+    Need to think of things to put here....
+  </div>
+</div>
+
+<hr class="rule">
+
+<!-- Work -->
+<div class="block">
+  <div class="ghost-label">Projects</div>
+
+  <div class="entry">
+    <a href="spectral-infrasounds.pdf" target="_blank">
+      <div class="entry-title">Spectral Infrasounds: An Taibhse sa Mheaisín<span class="tag">ongoing</span></div>
+    </a>
+    <div class="entry-meta">Investigation, Transduction, Fabulation<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="set-woolwich.pdf" target="_blank">
+      <div class="entry-title">SET Woolwich Archive <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">ongoing</span></div>
+    </a>
+    <div class="entry-meta">Spatial Awareness Program<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="muir-archive.pdf" target="_blank">
+      <div class="entry-title">Muir Art Archive<span class="tag">ongoing</span></div>
+    </a>
+    <div class="entry-meta">Restorative Publication<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="xiometic.pdf" target="_blank">
+      <div class="entry-title">Xiometic <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2025</span></div>
+    </a>
+    <div class="entry-meta">EP Visualiser<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="our-city-chambers.pdf" target="_blank">
+      <div class="entry-title">Thinking in a Dream <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2025</span></div>
+    </a>
+    <div class="entry-meta">Visual Design<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="snafu.pdf" target="_blank">
+      <div class="entry-title">SNAFU <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2024</span></div>
+    </a>
+    <div class="entry-meta">Sound Design<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="our-city-chambers.pdf" target="_blank">
+      <div class="entry-title">Our City Chambers <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2023</span></div>
+    </a>
+    <div class="entry-meta">Digital Heritage Resource<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="The Knight Map.pdf" target="_blank">
+      <div class="entry-title">The Knight Map <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2023</span></div>
+    </a>
+    <div class="entry-meta">Exhibition<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="Being Viral Being.pdf" target="_blank">
+      <div class="entry-title">Being Viral Being <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2023</span></div>
+    </a>
+    <div class="entry-meta">Film Production<span class="tag"></span></div>
+  </div>
+
+  <div class="entry">
+    <a href="Elysium Archive.pdf" target="_blank">
+      <div class="entry-title">Elyisum Archive <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2021 – 2025</span></div>
+    </a>
+    <div class="entry-meta">Music Collective<span class="tag"></span></div>
+  </div>
+
+</div>
+
+
+
+<hr class="rule">
+
+<!-- Roles -->
+<div class="block">
+  <div class="ghost-label">Roles</div>
+
+  <div class="entry">
+    <div class="exp-title">Senior AI Data Trainer<span class="exp-org">Invisible Technologies</span><span class="tag">May 2024 – Present</span></div>
+    <div class="exp-body">RLHF · Research · Justifications · Evaluations · Transcriptions</div>
+  </div>
+
+  <div class="entry">
+    <div class="exp-title">Sound Designer<span class="exp-org">Blazing Griffin</span><span class="tag">Jan – Apr 2024</span></div>
+    <div class="exp-body">Desc</div>
+  </div>
+
+  <div class="entry">
+    <div class="exp-title">Multimedia Developer<span class="exp-org">SUUM Studio</span><span class="tag">Jan 2023 – Jan 2024</span></div>
+    <div class="exp-body">Digital Heritage Platforms · 3D Modelling · Storyboarding · Pre-visualisation · Interactive maps</div>
+  </div>
+
+  <div class="entry">
+    <div class="exp-title">Data Analyst<span class="exp-org">NoCode.tech</span><span class="tag">May – Aug 2021</span></div>
+    <div class="exp-body">Desc</div>
+  </div>
+
+</div>
+
+<hr class="rule">
+
+<!-- Tools -->
+<div class="block">
+  <div class="ghost-label">Tools</div>
+
+  <div class="two-col">
+
+    <div class="info-block">
+      <strong>Spatial Rendering</strong><br>
+      3D Scanner App · Polycam · COLMAP · MeshLab · CloudCompare · CorbeauSplat · SuperSplat · Record3D<br><br>
+      <strong>AV &amp; Post</strong><br>
+      After Effects · Ableton Live · TouchDesigner · Blender · Unreal Engine <br><br>
+      <strong>Creative Coding</strong><br>
+      Python · HTML / CSS / JS · P5.js · Three.js · ML &amp; data pipelines<br><br>
+      <strong>Design</strong><br>
+      InDesign · Photoshop · Illustrator · Figma · ComfyUI
+    </div>
+
+
+
+  </div>
+</div>
+
+<hr class="rule">
+
+
+
+<!-- Certificates -->
+<div class="block">
+  <div class="ghost-label">Certificates</div>
+
+  <div class="two-col">
+
+
+
+    <div class="info-block">
+      <strong>Mathematics BSc</strong><br>
+      University of Glasgow · 2018–2022<br><br>
+      <strong>Scottish Design Awards — Finalist</strong><br>
+      Interface Design · Our City Chambers · 2024
+    </div>
+
+  </div>
+</div>
+
+
+
+
+
+</body>
+</html>
