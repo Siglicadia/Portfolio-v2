@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SET Woolwich Archive</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0a;
+  --fg: #d4cfc8;
+  --dim: #5a5650;
+  --mid: #8a857e;
+  --accent: #c8b89a;
+  --red: #8b3a3a;
+  --grid: rgba(255,255,255,0.03);
+  --rule: rgba(255,255,255,0.08);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── grid overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── scan line ── */
+body::after {
+  content: '';
+  position: fixed;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(200,184,154,0.15), transparent);
+  animation: scan 8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes scan {
+  0% { top: -2px; }
+  100% { top: 100vh; }
+}
+
+/* ── layout ── */
+.container {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+}
+
+/* ── header ── */
+header {
+  padding: 2rem 0 0;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1.5rem;
+}
+
+.header-id {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.12em;
+  line-height: 2;
+}
+
+.header-id span {
+  color: var(--accent);
+}
+
+.header-nav {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+  text-align: right;
+  line-height: 2;
+}
+
+.header-nav a {
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.header-nav a:hover { color: var(--fg); }
+
+/* ── viewer block ── */
+.viewer-block {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/7;
+  background: #050505;
+  overflow: hidden;
+  border-bottom: 1px solid var(--rule);
+}
+
+#three-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── HUD overlays ── */
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud-corner {
+  position: absolute;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  line-height: 1.8;
+}
+
+.hud-tl { top: 1.2rem; left: 1.5rem; }
+.hud-tr { top: 1.2rem; right: 1.5rem; text-align: right; }
+.hud-bl { bottom: 1.2rem; left: 1.5rem; }
+.hud-br { bottom: 1.2rem; right: 1.5rem; text-align: right; }
+
+.hud-corner span { color: var(--accent); }
+
+/* corner brackets */
+.bracket {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+
+.bracket-tl { top: 0.8rem; left: 0.8rem; border-top: 1px solid var(--dim); border-left: 1px solid var(--dim); }
+.bracket-tr { top: 0.8rem; right: 0.8rem; border-top: 1px solid var(--dim); border-right: 1px solid var(--dim); }
+.bracket-bl { bottom: 0.8rem; left: 0.8rem; border-bottom: 1px solid var(--dim); border-left: 1px solid var(--dim); }
+.bracket-br { bottom: 0.8rem; right: 0.8rem; border-bottom: 1px solid var(--dim); border-right: 1px solid var(--dim); }
+
+/* crosshair centre */
+.hud-cross {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px; height: 12px;
+}
+
+.hud-cross::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 1px;
+  background: rgba(200,184,154,0.2);
+}
+
+.hud-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 1px;
+  background: rgba(200,184,154,0.2);
+}
+
+/* loading state */
+.viewer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #050505;
+  z-index: 10;
+  transition: opacity 0.8s ease;
+}
+
+.viewer-loading.hidden { opacity: 0; pointer-events: none; }
+
+.loading-text {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+}
+
+.loading-bar {
+  width: 120px;
+  height: 1px;
+  background: var(--rule);
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: var(--accent);
+  animation: load-slide 1.8s ease infinite;
+}
+
+@keyframes load-slide {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.viewer-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: #050505;
+}
+
+.placeholder-note {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  text-align: center;
+  line-height: 2;
+}
+
+.placeholder-note span { color: var(--accent); }
+
+/* ── main grid ── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.main-grid > * {
+  padding: 2rem 2rem 2rem 0;
+  border-right: 1px solid var(--rule);
+}
+
+.main-grid > *:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.main-grid > *:not(:first-child) {
+  padding-left: 2rem;
+}
+
+/* ── section label ── */
+.section-label {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ── index col ── */
+
+
+.index-title {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-family: 'IBM Plex Sans', sans-serif;
+  margin-bottom: 0.4rem;
+}
+
+.index-sub {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  line-height: 2;
+  margin-bottom: 1.5rem;
+}
+
+.index-meta {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 2.2;
+}
+
+.index-meta span { color: var(--accent); }
+
+.index-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.index-link:hover {
+  color: var(--fg);
+  border-color: var(--dim);
+}
+
+/* ── concept col ── */
+
+
+.concept-text {
+  font-size: 11px;
+  color: var(--mid);
+  line-height: 1.9;
+  max-width: 420px;
+}
+
+.concept-text p + p { margin-top: 1rem; }
+
+.concept-text em {
+  color: var(--fg);
+  font-style: normal;
+}
+
+.verdict {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  background: rgba(139,58,58,0.05);
+  border-left: 2px solid var(--red);
+}
+
+.verdict p {
+  font-size: 10px;
+  color: var(--mid);
+  line-height: 1.9;
+  font-style: italic;
+}
+
+/* ── methodology col ── */
+
+
+.method-item {
+  margin-bottom: 1.4rem;
+}
+
+.method-label {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.3rem;
+}
+
+.method-body {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.8;
+}
+
+/* ── rooms section ── */
+.rooms-section {
+  border-bottom: 1px solid var(--rule);
+}
+
+.rooms-header {
+  padding: 1.5rem 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: 2rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0;
+}
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.room-item {
+  padding: 1.5rem 1.5rem 1.5rem 0;
+  border-right: 1px solid var(--rule);
+  cursor: default;
+  transition: background 0.2s;
+}
+
+.room-item:first-child { padding-left: 0; }
+.room-item:last-child { border-right: none; }
+
+.room-item:not(:first-child) { padding-left: 1.5rem; }
+
+.room-num {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.room-name {
+  font-size: 11px;
+  color: var(--fg);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 400;
+  margin-bottom: 0.4rem;
+}
+
+.room-status {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+.room-status.scanned { color: var(--accent); }
+
+/* ── output section ── */
+.output-section {
+  border-bottom: 1px solid var(--rule);
+}
+
+.output-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.output-item {
+  padding: 1.5rem 2rem 1.5rem 0;
+  border-right: 1px solid var(--rule);
+}
+
+.output-item:last-child { border-right: none; }
+.output-item:not(:first-child) { padding-left: 2rem; }
+
+.output-num {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.6rem;
+}
+
+.output-title {
+  font-size: 12px;
+  color: var(--fg);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+}
+
+.output-body {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.8;
+}
+
+.output-tag {
+  display: inline-block;
+  margin-top: 0.8rem;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  border: 1px solid var(--rule);
+  padding: 2px 6px;
+}
+
+.output-tag.live {
+  color: var(--accent);
+  border-color: rgba(200,184,154,0.2);
+}
+
+/* ── programme section ── */
+.programme-section {
+  border-bottom: 1px solid var(--rule);
+}
+
+.programme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.programme-col {
+  padding: 2rem 2rem 2rem 0;
+  border-right: 1px solid var(--rule);
+}
+
+.programme-col:last-child {
+  border-right: none;
+  padding-left: 2rem;
+  padding-right: 0;
+}
+
+.programme-text {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.9;
+  max-width: 480px;
+}
+
+.programme-text p + p { margin-top: 0.8rem; }
+
+.programme-text em { color: var(--fg); font-style: normal; }
+
+.data-block {
+  margin-top: 1.5rem;
+  border: 1px solid var(--rule);
+  padding: 1rem;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  line-height: 2.2;
+}
+
+.data-key { color: var(--dim); }
+.data-val { color: var(--fg); }
+.data-val.demolished { color: var(--red); }
+
+/* ── footer ── */
+footer {
+  padding: 1.5rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  line-height: 2;
+}
+
+.footer-left a {
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-left a:hover { color: var(--fg); }
+
+.footer-right {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+  text-align: right;
+  line-height: 2;
+}
+
+/* ── controls hint ── */
+.controls-hint {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+/* ── section padding ── */
+.section-pad {
+  padding: 1.5rem 0 0;
+}
+
+/* ── mobile ── */
+@media (max-width: 768px) {
+  .container { padding: 0 1.2rem; }
+  .main-grid { grid-template-columns: 1fr; }
+  .main-grid > * { border-right: none; border-bottom: 1px solid var(--rule); padding: 1.5rem 0; }
+  .rooms-grid { grid-template-columns: repeat(2, 1fr); gap: 0; }
+  .room-item { border-bottom: 1px solid var(--rule); }
+  .output-grid { grid-template-columns: 1fr; }
+  .output-item { border-right: none; border-bottom: 1px solid var(--rule); }
+  .programme-grid { grid-template-columns: 1fr; }
+  .programme-col { border-right: none; padding-left: 0; border-bottom: 1px solid var(--rule); }
+  .viewer-block { aspect-ratio: 4/3; }
+  footer { flex-direction: column; gap: 1rem; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- header -->
+  <header>
+    <div class="header-top">
+      <div class="header-id">
+        <span>SAP–001</span> / SET Woolwich Archive<br>
+        Spatial Awareness Programme · Dylan J. Elliott <br> 
+        Riverside House, Woolwich · <span>2021–2025</span> · Status: <span style="color:var(--red)">Demolished</span>
+      </div>
+       <!--
+      <div class="header-nav">
+        <a href="https://phylexia.com">← phylexia.com</a><br>
+        <a href="mailto:phylexia@pm.me">phylexia@pm.me</a>
+      </div>
+      -->
+    </div>
+  </header>
+
+</div>
+
+<!-- viewer — full width -->
+<div class="viewer-block">
+
+  <canvas id="three-canvas"></canvas>
+
+  <!-- loading state -->
+  <div class="viewer-loading" id="viewer-loading">
+    <div class="loading-text">LOADING SPATIAL DATA</div>
+    <div class="loading-bar"></div>
+  </div>
+
+  <!-- placeholder shown if no PLY present -->
+  <div class="viewer-placeholder" id="viewer-placeholder" style="display:none;">
+    <div class="placeholder-note">
+      <span>[ SAP-001 / vault_cinema.ply ]</span><br>
+      point cloud · drag to orbit · scroll to zoom<br>
+      <span style="color:var(--dim); margin-top:0.4rem; display:block;">place vault_cinema.ply alongside this file to load</span>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="bracket bracket-tl"></div>
+    <div class="bracket bracket-tr"></div>
+    <div class="bracket bracket-bl"></div>
+    <div class="bracket bracket-br"></div>
+
+    <div class="hud-corner hud-tl">
+      SAP–001 · <span>vault_cinema</span><br>
+      scan session · 3_vault<br>
+      <span id="point-count">—</span> pts
+    </div>
+
+    <div class="hud-corner hud-tr">
+      51.4933° N · 0.0657° E<br>
+      Riverside House · Woolwich<br>
+      <span>demolished 2025</span>
+    </div>
+
+    <div class="hud-corner hud-bl">
+      <span id="cam-info">orbit · drag / scroll</span>
+    </div>
+
+    <div class="hud-corner hud-br">
+      SET Woolwich Archive<br>
+      Spatial Awareness Programme<br>
+      <span>phylexia · 2025</span>
+    </div>
+
+    <div class="hud-cross"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- main 3-col -->
+  <div class="main-grid">
+
+    <!-- index -->
+    <div class="col-index">
+      <div class="section-label">Index</div>
+      <div class="index-title">SET Woolwich<br>Archive</div>
+      <div class="index-sub">
+        Spatial Awareness Programme<br>
+        Counter-Archive · SAP–001
+      </div>
+      <div class="index-meta">
+        _Location <span>Riverside House</span><br>
+        _Latitude <span>51.4933</span><br>
+        _Longitude <span>0.0657</span><br>
+        _Period <span>2021–2025</span><br>
+        _Status <span style="color:var(--red)">Demolished</span><br>
+        _Scans <span>5 sessions</span>
+      </div>
+      <a href="files/SET_Woolwich_Archive.pdf" class="index-link" target="_blank">→ current documentation PDF</a>
+    </div>
+
+    <!-- concept -->
+    <div class="col-concept">
+      <div class="section-label">Concept</div>
+      <div class="concept-text">
+        <p>SET Woolwich operated out of Riverside House, a converted HMRC building in Woolwich, from 2021 to 2025. Beginning as a building guardianship intended to house affordable studios for artists and practitioners, the infrastructure expanded to include a community garden, a soup kitchen, an in-house radio, and a club space in the old vault.</p>
+        <p>No long lease: <em>not an artist studio complex</em>. No late-night licence: <em>not a nightclub</em>. The system found nothing. The demolition was legal.</p>
+      </div>
+      <div class="verdict">
+        <p>This project begins from that gap — not as a critique of inadequate classification, but as a practice of making visible what the systems cannot see. A counter-archive through spatial awareness and sonic architecture.</p>
+      </div>
+    </div>
+
+    <!-- methodology -->
+    <div class="col-method">
+      <div class="section-label">Methodology</div>
+
+      <div class="method-item">
+        <div class="method-label">PHOTOGRAMMETRY AS FORENSIC METHOD</div>
+        <div class="method-body">Not visualisation. Not heritage render. The production of a spatial record that testifies to a space's existence at a specific moment. Incompleteness preserved. The scans are not complete. They are honest.</div>
+      </div>
+
+      <div class="method-item">
+        <div class="method-label">SONIFICATION AS PARALLEL INVESTIGATION</div>
+        <div class="method-body">The point cloud treated as a dataset. Spatial axes become temporal and frequency axes. Colour channels become timbral parameters. The space expressed in a domain where it had no prior existence.</div>
+      </div>
+
+      <div class="method-item">
+        <div class="method-label">THE ABSENT DATASET AS EVIDENCE</div>
+        <div class="method-body">SET does not appear in NTIA, MVT, GLA, or any heritage framework. The absence is systematic. The methodology begins from the negative space.</div>
+      </div>
+
+      <div class="method-item">
+        <div class="method-label">COMMUNITY TESTIMONY</div>
+        <div class="method-body">Testimony from artists, organisers, and residents constitutes an evidential layer no dataset captures. Not a supplement to the spatial record. Co-primary with it.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- rooms -->
+  <div class="rooms-section">
+    <div class="rooms-header section-pad">
+      <div class="section-label" style="flex:1; margin-bottom:1rem;">Scan Sessions</div>
+    </div>
+    <div class="rooms-grid">
+      <div class="room-item">
+        <div class="room-num">01 ——</div>
+        <div class="room-name">Reception</div>
+        <div class="room-status scanned">scanned</div>
+      </div>
+      <div class="room-item">
+        <div class="room-num">02 ——</div>
+        <div class="room-name">Garden</div>
+        <div class="room-status scanned">scanned</div>
+      </div>
+      <div class="room-item">
+        <div class="room-num">03 ——</div>
+        <div class="room-name">Vault</div>
+        <div class="room-status scanned">scanned</div>
+      </div>
+      <div class="room-item">
+        <div class="room-num">04 ——</div>
+        <div class="room-name">Foyer</div>
+        <div class="room-status scanned">scanned</div>
+      </div>
+      <div class="room-item">
+        <div class="room-num">05 ——</div>
+        <div class="room-name">Pink Staircase</div>
+        <div class="room-status scanned">scanned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- outputs -->
+  <div class="output-section">
+    <div class="section-pad">
+      <div class="section-label">Outputs</div>
+    </div>
+    <div class="output-grid">
+      <div class="output-item">
+        <div class="output-num">OUT–01</div>
+        <div class="output-title">Audio Essay + Motion Visuals</div>
+        <div class="output-body">Long-form audio essay and motion visuals as a single continuous piece. Geometry, sonification, and community testimony composed together. Voices processed through the spaces' impulse responses. Datamosh transitions between rooms.</div>
+        <div class="output-tag">in production</div>
+      </div>
+      <div class="output-item">
+        <div class="output-num">OUT–02</div>
+        <div class="output-title">Interactive Point Cloud</div>
+        <div class="output-body">Scan data published as a navigable point cloud — accessible via web browser. Not a photorealistic reconstruction but the raw evidential geometry, navigable and permanent. Maintained by the community that produced it.</div>
+        <div class="output-tag live">live — above</div>
+      </div>
+      <div class="output-item">
+        <div class="output-num">OUT–03</div>
+        <div class="output-title">Written Documentation</div>
+        <div class="output-body">Project methodology, contextual research, and the evidential record of what SET was and what its demolition removed. Structured for preservation, awareness, and future reference. For SET's own archive and wider circulation.</div>
+        <div class="output-tag live">available — PDF</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- programme -->
+  <div class="programme-section">
+    <div class="programme-grid">
+      <div class="programme-col">
+        <div class="section-label">Programme</div>
+        <div class="programme-text">
+          <p>The SAP is an open programme. The founding case — SET Woolwich, SAP–001 — establishes the methodology: identify sites of community cultural significance that fall outside formal protection mechanisms, conduct photogrammetric reconstruction before or during demolition, build a spatial archive that exists outside the data systems that failed to protect the space.</p>
+          <p>The expansion follows a principle of <em>invitation rather than selection</em>. SAP does not identify sites from outside — it responds to communities already in the process of losing a space, who want a record made on terms they control.</p>
+          <p>What is built is not a database. It is a counter-archive: spatial records made by and for the communities that produced the spaces, in opposition to the data systems that rendered those spaces invisible. <em>The demolished building is inadmissible. The data is not.</em></p>
+        </div>
+      </div>
+      <div class="programme-col">
+        <div class="section-label">SAP–001 Data</div>
+        <div class="data-block">
+          <div class="data-row"><span class="data-key">_Location</span><span class="data-val">Riverside House</span></div>
+          <div class="data-row"><span class="data-key">_Borough</span><span class="data-val">Royal Borough of Greenwich</span></div>
+          <div class="data-row"><span class="data-key">_Latitude</span><span class="data-val">51.49334949653999</span></div>
+          <div class="data-row"><span class="data-key">_Longitude</span><span class="data-val">0.06565580721714635</span></div>
+          <div class="data-row"><span class="data-key">_Title</span><span class="data-val">SET Woolwich</span></div>
+          <div class="data-row"><span class="data-key">_Period</span><span class="data-val">2021–2025</span></div>
+          <div class="data-row"><span class="data-key">_Classification</span><span class="data-val">unclassified</span></div>
+          <div class="data-row"><span class="data-key">_NTIA</span><span class="data-val">not listed</span></div>
+          <div class="data-row"><span class="data-key">_GLA</span><span class="data-val">not listed</span></div>
+          <div class="data-row"><span class="data-key">_Heritage</span><span class="data-val">no framework</span></div>
+          <div class="data-row"><span class="data-key">_Status</span><span class="data-val demolished">Demolished</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <footer>
+    <div class="footer-left">
+      SET Woolwich Archive · Spatial Awareness Programme · SAP–001<br>
+      Dylan J. Elliott · <a href="https://phylexia.com">Phylexia</a> · <a href="mailto:phylexia@pm.me">phylexia@pm.me</a>
+    </div>
+    <!--
+    <div class="footer-right">
+      Counter-archive · 2025<br>
+      The demolished building is inadmissible.<br>
+      The data is not.
+    </div>
+    -->
+  </footer>
+
+</div>
+
+<!-- Three.js point cloud viewer -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('three-canvas');
+const loading = document.getElementById('viewer-loading');
+const placeholder = document.getElementById('viewer-placeholder');
+const pointCountEl = document.getElementById('point-count');
+const camInfoEl = document.getElementById('cam-info');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x050505, 1);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
+camera.position.set(0, 0, 5);
+
+// orbit state
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let spherical = { theta: 0.3, phi: 1.2, radius: 5 };
+let target = new THREE.Vector3(0, 0, 0);
+
+function updateCamera() {
+  camera.position.x = target.x + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+  camera.position.y = target.y + spherical.radius * Math.cos(spherical.phi);
+  camera.position.z = target.z + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+  camera.lookAt(target);
+}
+
+canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+window.addEventListener('mouseup', () => { isDragging = false; });
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+  spherical.theta -= dx * 0.005;
+  spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy * 0.005));
+  prevMouse = { x: e.clientX, y: e.clientY };
+  camInfoEl.textContent = `θ ${spherical.theta.toFixed(2)} · φ ${spherical.phi.toFixed(2)} · r ${spherical.radius.toFixed(2)}`;
+});
+canvas.addEventListener('wheel', e => {
+  spherical.radius = Math.max(0.5, Math.min(50, spherical.radius + e.deltaY * 0.01));
+  e.preventDefault();
+}, { passive: false });
+
+// touch
+let lastTouch = null;
+canvas.addEventListener('touchstart', e => { lastTouch = e.touches[0]; }, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  if (!lastTouch) return;
+  const t = e.touches[0];
+  const dx = t.clientX - lastTouch.clientX;
+  const dy = t.clientY - lastTouch.clientY;
+  spherical.theta -= dx * 0.005;
+  spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy * 0.005));
+  lastTouch = t;
+}, { passive: true });
+
+function resize() {
+  const w = canvas.parentElement.clientWidth;
+  const h = canvas.parentElement.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// try loading PLY
+async function loadPLY() {
+  try {
+    const response = await fetch('vault_cinema.ply');
+    if (!response.ok) throw new Error('not found');
+    const buffer = await response.arrayBuffer();
+    const geometry = parsePLY(buffer);
+    if (!geometry) throw new Error('parse failed');
+
+    // Centre and measure before creating material so we can scale point size
+    geometry.computeBoundingBox();
+    const centre = new THREE.Vector3();
+    geometry.boundingBox.getCenter(centre);
+
+    const size = new THREE.Vector3();
+    geometry.boundingBox.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    spherical.radius = maxDim * 1.8;
+
+    const material = new THREE.PointsMaterial({
+      size: maxDim * 0.003,
+      vertexColors: true,
+      sizeAttenuation: true,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    points.position.sub(centre);
+    scene.add(points);
+
+    const total    = geometry.userData.totalCount   || geometry.attributes.position.count;
+    const sampled  = geometry.userData.sampledCount || geometry.attributes.position.count;
+    const totalStr   = total   >= 1e6 ? (total   / 1e6).toFixed(2) + 'M' : total.toLocaleString();
+    const sampledStr = sampled >= 1e6 ? (sampled / 1e6).toFixed(2) + 'M' : sampled.toLocaleString();
+    pointCountEl.textContent = sampled < total
+      ? `${sampledStr} / ${totalStr} pts`
+      : `${totalStr} pts`;
+
+    loading.classList.add('hidden');
+    setTimeout(() => { loading.style.display = 'none'; }, 900);
+
+  } catch(e) {
+    loading.style.display = 'none';
+    placeholder.style.display = 'flex';
+    pointCountEl.textContent = 'no file';
+  }
+}
+
+function parsePLY(buffer) {
+  // Read enough bytes for the header (most PLY headers are well under 4096 bytes)
+  const headerBytes = Math.min(buffer.byteLength, 4096);
+  const text = new TextDecoder('utf-8', { fatal: false }).decode(new Uint8Array(buffer, 0, headerBytes));
+  const headerEnd = text.indexOf('end_header');
+  if (headerEnd === -1) return null;
+
+  const header = text.slice(0, headerEnd);
+  const vertMatch = header.match(/element vertex (\d+)/);
+  if (!vertMatch) return null;
+  const vertCount = parseInt(vertMatch[1]);
+
+  const isBinary = header.includes('format binary');
+  const isLittleEndian = header.includes('binary_little_endian');
+
+  // Only parse properties belonging to the vertex element (stop at the next 'element' line)
+  const vertexSection = header.match(/element vertex \d+\n([\s\S]*?)(?=element |\s*$)/);
+  const vertexPropsText = vertexSection ? vertexSection[1] : '';
+  const props = [];
+  (vertexPropsText.match(/property \S+ \S+/g) || []).forEach(line => {
+    const parts = line.trim().split(' ');
+    props.push({ type: parts[1], name: parts[2] });
+  });
+
+  // Find the exact byte offset where binary/ASCII data begins.
+  // Scan raw bytes so we handle both LF and CRLF line endings correctly.
+  const rawHeader = new Uint8Array(buffer, 0, headerBytes);
+  const marker = new TextEncoder().encode('end_header');
+  let headerByteLen = -1;
+  outer: for (let i = 0; i <= rawHeader.length - marker.length; i++) {
+    for (let j = 0; j < marker.length; j++) {
+      if (rawHeader[i + j] !== marker[j]) continue outer;
+    }
+    let pos = i + marker.length;
+    if (rawHeader[pos] === 13) pos++; // skip \r
+    if (rawHeader[pos] === 10) pos++; // skip \n
+    headerByteLen = pos;
+    break;
+  }
+  if (headerByteLen === -1) return null;
+
+  // Subsample large clouds so the main thread doesn't block for too long.
+  // 2M points is plenty of detail and parses in ~1-2 s.
+  const MAX_POINTS = 2_000_000;
+  const step = vertCount > MAX_POINTS ? Math.ceil(vertCount / MAX_POINTS) : 1;
+  const sampledCount = Math.ceil(vertCount / step);
+
+  const positions = new Float32Array(sampledCount * 3);
+  const colors = new Float32Array(sampledCount * 3);
+
+  if (isBinary) {
+    const typeSize = { char:1, uchar:1, short:2, ushort:2, int:4, uint:4, float:4, double:8 };
+    let stride = 0;
+    props.forEach(p => { stride += typeSize[p.type] || 4; });
+
+    const dataView = new DataView(buffer, headerByteLen);
+    const le = isLittleEndian;
+    let si = 0;
+
+    for (let i = 0; i < vertCount; i += step) {
+      let off = i * stride;
+      props.forEach(p => {
+        const sz = typeSize[p.type] || 4;
+        let val;
+        if (p.type === 'float')       val = dataView.getFloat32(off, le);
+        else if (p.type === 'double') val = dataView.getFloat64(off, le);
+        else if (p.type === 'uchar')  val = dataView.getUint8(off);
+        else if (p.type === 'int')    val = dataView.getInt32(off, le);
+        else if (p.type === 'uint')   val = dataView.getUint32(off, le);
+        else                          val = dataView.getUint8(off);
+
+        if      (p.name === 'x')                           positions[si*3]   = val;
+        else if (p.name === 'y')                           positions[si*3+1] = val;
+        else if (p.name === 'z')                           positions[si*3+2] = val;
+        else if (p.name === 'red'   || p.name === 'r')     colors[si*3]      = p.type === 'uchar' ? val / 255 : val;
+        else if (p.name === 'green' || p.name === 'g')     colors[si*3+1]    = p.type === 'uchar' ? val / 255 : val;
+        else if (p.name === 'blue'  || p.name === 'b')     colors[si*3+2]    = p.type === 'uchar' ? val / 255 : val;
+        off += sz;
+      });
+      si++;
+    }
+  } else {
+    // ASCII — find each coordinate/colour column by name rather than assuming order
+    const dataText = new TextDecoder().decode(buffer).slice(headerByteLen);
+    const lines = dataText.split('\n');
+    const xi = props.findIndex(p => p.name === 'x');
+    const yi = props.findIndex(p => p.name === 'y');
+    const zi = props.findIndex(p => p.name === 'z');
+    const ri = props.findIndex(p => p.name === 'red'   || p.name === 'r');
+    const gi = props.findIndex(p => p.name === 'green' || p.name === 'g');
+    const bi = props.findIndex(p => p.name === 'blue'  || p.name === 'b');
+    const colorIsFloat = ri !== -1 && props[ri].type === 'float';
+    let si = 0;
+    for (let i = 0; i < vertCount && i < lines.length; i += step) {
+      const vals = lines[i].trim().split(/\s+/).map(Number);
+      if (xi !== -1) positions[si*3]   = vals[xi];
+      if (yi !== -1) positions[si*3+1] = vals[yi];
+      if (zi !== -1) positions[si*3+2] = vals[zi];
+      if (ri !== -1) {
+        colors[si*3]   = colorIsFloat ? vals[ri] : vals[ri] / 255;
+        colors[si*3+1] = colorIsFloat ? vals[gi] : vals[gi] / 255;
+        colors[si*3+2] = colorIsFloat ? vals[bi] : vals[bi] / 255;
+      }
+      si++;
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
+  geometry.userData.totalCount = vertCount;
+  geometry.userData.sampledCount = sampledCount;
+  return geometry;
+}
+
+// animate
+function animate() {
+  requestAnimationFrame(animate);
+  updateCamera();
+  renderer.render(scene, camera);
+}
+animate();
+loadPLY();
+</script>
+
+</body>
+</html>
