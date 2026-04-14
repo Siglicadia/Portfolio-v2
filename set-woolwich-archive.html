@@ -37,19 +37,17 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1.5px, transparent 1.5px);
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 0;
 }
 
 /* ── scan line ── */
-body::after {
+.viewer-block::after {
   content: '';
-  position: fixed;
-  top: -100%;
+  position: absolute;
+  top: -2px;
   left: 0;
   width: 100%;
   height: 2px;
@@ -61,7 +59,7 @@ body::after {
 
 @keyframes scan {
   0% { top: -2px; }
-  100% { top: 100vh; }
+  100% { top: 100%; }
 }
 
 /* ── layout ── */
@@ -117,7 +115,9 @@ header {
 /* ── viewer block ── */
 .viewer-block {
   position: relative;
-  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
   aspect-ratio: 16/7;
   background: #050505;
   overflow: hidden;
@@ -603,7 +603,7 @@ footer {
   .output-item { border-right: none; border-bottom: 1px solid var(--rule); }
   .programme-grid { grid-template-columns: 1fr; }
   .programme-col { border-right: none; padding-left: 0; border-bottom: 1px solid var(--rule); }
-  .viewer-block { aspect-ratio: 4/3; }
+  .viewer-block { aspect-ratio: 4/3; padding: 0 1.2rem; }
   footer { flex-direction: column; gap: 1rem; align-items: flex-start; }
 }
 </style>
@@ -705,7 +705,7 @@ footer {
         _Status <span style="color:var(--red)">Demolished</span><br>
         _Scans <span>5 sessions</span>
       </div>
-      <a href="files/SET_Woolwich_Archive.pdf" class="index-link" target="_blank">→ current documentation PDF</a>
+     <!-- <a href="files/SET_Woolwich_Archive.pdf" class="index-link" target="_blank">→ meta documentation PDF</a> -->
     </div>
 
     <!-- concept -->
@@ -797,13 +797,13 @@ footer {
         <div class="output-num">OUT–02</div>
         <div class="output-title">Interactive Point Cloud</div>
         <div class="output-body">Scan data published as a navigable point cloud — accessible via web browser. Not a photorealistic reconstruction but the raw evidential geometry, navigable and permanent. Maintained by the community that produced it.</div>
-        <div class="output-tag live">live — above</div>
+        <div class="output-tag live">live</div>
       </div>
       <div class="output-item">
         <div class="output-num">OUT–03</div>
         <div class="output-title">Written Documentation</div>
         <div class="output-body">Project methodology, contextual research, and the evidential record of what SET was and what its demolition removed. Structured for preservation, awareness, and future reference. For SET's own archive and wider circulation.</div>
-        <div class="output-tag live">available — PDF</div>
+        <div class="output-tag">in production</div>
       </div>
     </div>
   </div>
