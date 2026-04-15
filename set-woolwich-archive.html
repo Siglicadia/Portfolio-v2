@@ -1442,14 +1442,16 @@ let clock = 0;
 const ANIM_SPEED = 0.18;
 const ANIM_SCALE = 0.008;
 
-// ── reactive audio constants ───────────────────────────────────────────────
-const TRANSIENT_THRESHOLD = 0.015; // lower = more sensitive to attacks
-const TRANSIENT_DECAY     = 0.72;  // lower = faster snap-back
-const LIT_WINDOW_BASE     = 0.018; // min cluster width (fraction of point array)
-const LIT_WINDOW_MAX      = 0.06;  // max cluster width on peak transient
-const LIT_BLUE_BIAS       = 0.5;   // 0 = all white, 1 = all blue
+// ── scan constants ─────────────────────────────────────────────────────────
+const SCAN_SPEED      = 0.05;  // fraction of cloud swept per second (full pass ~20s)
+const SCAN_WIDTH_FRAC = 0.06;  // beam width as fraction of cloud extent
+const SCAN_DISTORT    = 0.010; // shimmer amplitude at beam (audio modulates this)
 
-// ── reactive audio state ───────────────────────────────────────────────────
+// ── transient detection (modulates scan distortion) ────────────────────────
+const TRANSIENT_THRESHOLD = 0.015;
+const TRANSIENT_DECAY     = 0.72;
+
+// ── state ──────────────────────────────────────────────────────────────────
 let originalColors    = null;
 let prevAmplitude     = 0;
 let transientStrength = 0;
@@ -1457,33 +1459,23 @@ let audioReactive     = false;
 let viewerAudioCtx    = null;
 let viewerAnalyser    = null;
 let viewerFreqData    = null;
-
-// ── light clusters — drift through index-space, jump on transients ─────────
-const litClusters = [
-  { pos: 0.12, speed: 0.040 },
-  { pos: 0.47, speed: 0.067 },
-  { pos: 0.73, speed: 0.051 },
-];
+let scanActive        = false;
+let scanT             = 0;
+let scanMin           = -1;
+let scanMax           = 1;
+let scanAxis          = 0; // 0=X 1=Y 2=Z — set to longest axis on load
 
 function animatePoints(dt) {
   if (!currentPoints || !originalPositions) return;
   clock += dt * ANIM_SPEED;
 
-  // ── noise drift (always active) ───────────────────────────────────────────
-  const pos   = currentPoints.geometry.attributes.position.array;
-  const orig  = originalPositions;
-  const n     = pos.length / 3;
-  const scale = spherical.radius;
-  for (let i = 0; i < n; i += 4) {
-    const ox = orig[i*3], oy = orig[i*3+1], oz = orig[i*3+2];
-    const t  = clock + i * 0.0003;
-    pos[i*3]   = ox + (noise3(ox * 0.4 + t,       oy * 0.4,           oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
-    pos[i*3+1] = oy + (noise3(ox * 0.4,            oy * 0.4 + t * 1.1, oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
-    pos[i*3+2] = oz + (noise3(ox * 0.4,            oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * scale;
+  // ── advance scan ──────────────────────────────────────────────────────────
+  if (scanActive) {
+    scanT += dt * SCAN_SPEED;
+    if (scanT > 1) scanT = 0; // loop
   }
-  currentPoints.geometry.attributes.position.needsUpdate = true;
 
-  // ── transient detection ───────────────────────────────────────────────────
+  // ── transient detection (modulates distortion at scan line) ───────────────
   let amplitude = 0;
   if (audioReactive && viewerAnalyser && viewerFreqData) {
     viewerAnalyser.getByteTimeDomainData(viewerFreqData);
@@ -1495,64 +1487,69 @@ function animatePoints(dt) {
     amplitude = peak;
   }
   const delta = Math.max(0, amplitude - prevAmplitude);
-  if (delta > TRANSIENT_THRESHOLD) {
-    transientStrength = Math.min(1, transientStrength + delta * 4);
-  }
+  if (delta > TRANSIENT_THRESHOLD) transientStrength = Math.min(1, transientStrength + delta * 4);
   transientStrength *= TRANSIENT_DECAY;
   prevAmplitude = amplitude;
 
-  if (!originalColors) return;
+  // ── noise drift + scan distortion ─────────────────────────────────────────
+  const pos   = currentPoints.geometry.attributes.position.array;
+  const orig  = originalPositions;
+  const n     = pos.length / 3;
+  const scale = spherical.radius;
+  const scanWorldPos   = scanMin + scanT * (scanMax - scanMin);
+  const scanWidthWorld = (scanMax - scanMin) * SCAN_WIDTH_FRAC;
+  const distortAmp     = SCAN_DISTORT * scale * (1 + transientStrength * 3);
 
-  // ── drift clusters, jump on strong transient ──────────────────────────────
-  for (const cl of litClusters) {
-    cl.pos = (cl.pos + dt * cl.speed) % 1.0;
-  }
-  if (transientStrength > 0.4) {
-    const jumpIdx = Math.floor(hash(clock * 17.3) * litClusters.length);
-    litClusters[jumpIdx].pos = hash(jumpIdx * 7.3 + clock * 11.1);
-  }
+  for (let i = 0; i < n; i += 4) {
+    const ox = orig[i*3], oy = orig[i*3+1], oz = orig[i*3+2];
+    const t  = clock + i * 0.0003;
+    let nx = (noise3(ox * 0.4 + t,       oy * 0.4,           oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
+    let ny = (noise3(ox * 0.4,            oy * 0.4 + t * 1.1, oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
+    let nz = (noise3(ox * 0.4,            oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * scale;
 
-  // ── localised colour glitch ───────────────────────────────────────────────
-  const col    = currentPoints.geometry.attributes.color.array;
-  const orig_c = originalColors;
-  const nc     = col.length / 3;
-
-  if (audioReactive && transientStrength > 0.008) {
-    const litWindow = LIT_WINDOW_BASE + transientStrength * (LIT_WINDOW_MAX - LIT_WINDOW_BASE);
-    const half      = litWindow / 2;
-    const frameHash = hash(clock * 1000);
-    const stride    = dt > 0.033 ? 2 : 1;
-
-    for (let i = 0; i < nc; i += stride) {
-      const frac = i / nc;
-      let inCluster = false;
-      for (const cl of litClusters) {
-        const d = Math.abs(frac - cl.pos);
-        if (Math.min(d, 1 - d) < half) { inCluster = true; break; }
-      }
-
-      const base = i * 3;
-      if (inCluster && hash(i * 0.17 + frameHash * 73.1) < 0.65) {
-        const isBlue = hash(i * 3.1 + frameHash * 17.3) > LIT_BLUE_BIAS;
-        col[base]   = isBlue ? 0.75 : 1.0;
-        col[base+1] = isBlue ? 0.88 : 1.0;
-        col[base+2] = 1.0;
-      } else {
-        col[base]   = orig_c[base];
-        col[base+1] = orig_c[base+1];
-        col[base+2] = orig_c[base+2];
-      }
-      if (stride === 2 && i + 1 < nc) {
-        const b2 = (i+1) * 3;
-        col[b2]   = orig_c[b2];
-        col[b2+1] = orig_c[b2+1];
-        col[b2+2] = orig_c[b2+2];
+    if (scanActive) {
+      const axisVal    = orig[i*3 + scanAxis];
+      const distToScan = Math.abs(axisVal - scanWorldPos);
+      if (distToScan < scanWidthWorld) {
+        const falloff = 1 - distToScan / scanWidthWorld;
+        ny += Math.sin(clock * 11 + i * 0.07) * falloff * distortAmp;
+        nz += Math.cos(clock *  8 + i * 0.05) * falloff * distortAmp;
       }
     }
-  } else {
-    col.set(orig_c);
+
+    pos[i*3]   = ox + nx;
+    pos[i*3+1] = oy + ny;
+    pos[i*3+2] = oz + nz;
   }
-  currentPoints.geometry.attributes.color.needsUpdate = true;
+  currentPoints.geometry.attributes.position.needsUpdate = true;
+
+  // ── scan colour sweep ─────────────────────────────────────────────────────
+  if (originalColors) {
+    const col    = currentPoints.geometry.attributes.color.array;
+    const orig_c = originalColors;
+    const nc     = col.length / 3;
+
+    if (scanActive) {
+      const brightBoost = 0.65 + transientStrength * 0.35;
+      for (let i = 0; i < nc; i++) {
+        const axisVal    = orig[i*3 + scanAxis];
+        const distToScan = Math.abs(axisVal - scanWorldPos);
+        if (distToScan < scanWidthWorld) {
+          const f = (1 - distToScan / scanWidthWorld) * brightBoost;
+          col[i*3]   = orig_c[i*3]   + (0.88 - orig_c[i*3])   * f;
+          col[i*3+1] = orig_c[i*3+1] + (0.93 - orig_c[i*3+1]) * f;
+          col[i*3+2] = orig_c[i*3+2] + (1.0  - orig_c[i*3+2]) * f;
+        } else {
+          col[i*3]   = orig_c[i*3];
+          col[i*3+1] = orig_c[i*3+1];
+          col[i*3+2] = orig_c[i*3+2];
+        }
+      }
+    } else {
+      col.set(orig_c);
+    }
+    currentPoints.geometry.attributes.color.needsUpdate = true;
+  }
 }
 
 // ── point size slider ──────────────────────────────────────────────────────
@@ -1601,6 +1598,7 @@ audioPlayBtn.addEventListener('click', () => {
     sonicAudio.addEventListener('ended', () => {
       sonicPlaying = false;
       audioReactive = false;
+      scanActive = false;
       audioPlayBtn.classList.remove('playing');
       audioPlayBtn.textContent = '▶ sonification';
       audioProgressFill.style.width = '0%';
@@ -1610,6 +1608,7 @@ audioPlayBtn.addEventListener('click', () => {
     sonicAudio.pause();
     sonicPlaying = false;
     audioReactive = false;
+    scanActive = false;
     audioPlayBtn.classList.remove('playing');
     audioPlayBtn.textContent = '▶ play sonification';
   } else {
@@ -1632,6 +1631,8 @@ audioPlayBtn.addEventListener('click', () => {
     sonicAudio.play();
     sonicPlaying = true;
     audioReactive = true;
+    scanActive = true;
+    scanT = 0;
     audioPlayBtn.classList.add('playing');
     audioPlayBtn.textContent = '⏸ pause';
   }
@@ -1719,7 +1720,7 @@ async function loadPLY(room) {
   loading.classList.remove('hidden');
   placeholder.style.display = 'none';
 
-  if (currentPoints) { scene.remove(currentPoints); currentPoints = null; originalPositions = null; }
+  if (currentPoints) { scene.remove(currentPoints); currentPoints = null; originalPositions = null; originalColors = null; }
 
   try {
     const response = await fetch(BASE_URL + room.file);
@@ -1734,6 +1735,16 @@ async function loadPLY(room) {
     const size = new THREE.Vector3();
     geometry.boundingBox.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
+
+    // pick longest axis for scan sweep
+    if (size.x >= size.y && size.x >= size.z) {
+      scanAxis = 0; scanMin = geometry.boundingBox.min.x; scanMax = geometry.boundingBox.max.x;
+    } else if (size.y >= size.z) {
+      scanAxis = 1; scanMin = geometry.boundingBox.min.y; scanMax = geometry.boundingBox.max.y;
+    } else {
+      scanAxis = 2; scanMin = geometry.boundingBox.min.z; scanMax = geometry.boundingBox.max.z;
+    }
+    scanT = 0;
     spherical.radius = maxDim * 1.8;
 
     basePointSize = maxDim * 0.003;
@@ -1914,6 +1925,7 @@ let sonicCurrentAudio = null; // track playing audio for synthetic fallback
 function resizeSonicCanvas() {
   if (!sonicWaveCanvas) return;
   const wrap = sonicWaveCanvas.parentElement;
+  if (!wrap) return;
   const w = wrap.clientWidth  || 400;
   const h = wrap.clientHeight || 160;
   if (sonicWaveCanvas.width !== w || sonicWaveCanvas.height !== h) {
@@ -2039,12 +2051,13 @@ document.querySelectorAll('.sonic-play-btn').forEach((btn, i) => {
     }
 
     // pause all others
+    const allPlayBtns = document.querySelectorAll('.sonic-play-btn');
     sonicPlayers.forEach((p, j) => {
       if (j !== i && p.playing) {
         p.audio.pause();
         p.playing = false;
-        document.querySelectorAll('.sonic-play-btn')[j].textContent = '▶ play';
-        document.querySelectorAll('.sonic-play-btn')[j].classList.remove('playing');
+        allPlayBtns[j].textContent = '▶ play';
+        allPlayBtns[j].classList.remove('playing');
       }
     });
 
@@ -2075,7 +2088,7 @@ document.querySelectorAll('.sonic-play-btn').forEach((btn, i) => {
 
 window.addEventListener('resize', resizeSonicCanvas);
 // robust sizing: ResizeObserver + timeout fallback
-if (sonicWaveCanvas) {
+if (sonicWaveCanvas && sonicWaveCanvas.parentElement) {
   new ResizeObserver(resizeSonicCanvas).observe(sonicWaveCanvas.parentElement);
 }
 setTimeout(resizeSonicCanvas, 50);
