@@ -785,6 +785,21 @@ input[type=range].hud-range::-webkit-slider-thumb {
   cursor: pointer;
 }
 
+.hud-noise-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--rule);
+  padding: 2px 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.hud-noise-btn:hover { color: var(--fg); border-color: var(--fg); }
+.hud-noise-btn.paused { color: var(--accent); border-color: var(--accent); }
+
 /* ── audio player ── */
 .audio-player {
   position: absolute;
@@ -1078,6 +1093,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
     <div class="hud-slider-wrap">
       <span class="hud-slider-label">density</span>
       <input type="range" class="hud-range" id="point-size-slider" min="0.1" max="3" step="0.05" value="1">
+      <button class="hud-noise-btn" id="noise-toggle-btn">⏸ noise</button>
     </div>
   </div>
 </div>
@@ -1442,12 +1458,16 @@ let clock = 0;
 const ANIM_SPEED = 0.18;
 const ANIM_SCALE = 0.008;
 
-// ── scan constants ─────────────────────────────────────────────────────────
-const SCAN_SPEED      = 0.05;  // fraction of cloud swept per second (full pass ~20s)
-const SCAN_WIDTH_FRAC = 0.06;  // beam width as fraction of cloud extent
-const SCAN_DISTORT    = 0.010; // shimmer amplitude at beam (audio modulates this)
+// ── hot-point constants ────────────────────────────────────────────────────
+const HP_RADIUS_FRAC  = 0.08;  // influence radius as fraction of cloud extent
+const HP_JUMP_MIN     = 0.25;  // min seconds between jumps
+const HP_JUMP_MAX     = 0.9;   // max seconds between jumps
+const HP_DISTORT      = 0.022; // displacement amplitude at hot point
+const HP_COLOR_R      = 0.55;  // light blue target colour
+const HP_COLOR_G      = 0.82;
+const HP_COLOR_B      = 1.0;
 
-// ── transient detection (modulates scan distortion) ────────────────────────
+// ── transient detection ────────────────────────────────────────────────────
 const TRANSIENT_THRESHOLD = 0.015;
 const TRANSIENT_DECAY     = 0.72;
 
@@ -1459,23 +1479,48 @@ let audioReactive     = false;
 let viewerAudioCtx    = null;
 let viewerAnalyser    = null;
 let viewerFreqData    = null;
-let scanActive        = false;
-let scanT             = 0;
-let scanMin           = -1;
-let scanMax           = 1;
-let scanAxis          = 0; // 0=X 1=Y 2=Z — set to longest axis on load
+let noiseActive       = true;  // noise motion toggle
+
+// hot point state
+let hpActive      = false;  // true while sonification plays
+let hpX = 0, hpY = 0, hpZ = 0;  // current world-space centre
+let hpTimer       = 0;          // countdown to next jump
+let hpNextJump    = 0.5;        // seconds until next jump
+let hpRadius      = 1;          // world-space influence radius
+let hpPointCount  = 0;          // total point count (for random index pick)
+
+function hpPickNewTarget() {
+  if (!originalPositions || hpPointCount === 0) return;
+  // pick a random existing point as the new centre
+  const idx = Math.floor(Math.random() * hpPointCount);
+  hpX = originalPositions[idx * 3];
+  hpY = originalPositions[idx * 3 + 1];
+  hpZ = originalPositions[idx * 3 + 2];
+  hpNextJump = HP_JUMP_MIN + Math.random() * (HP_JUMP_MAX - HP_JUMP_MIN);
+  hpTimer = 0;
+}
+
+function hpReset() {
+  hpActive = false;
+  hpTimer  = 0;
+  // restore original colours immediately
+  if (currentPoints && originalColors) {
+    currentPoints.geometry.attributes.color.array.set(originalColors);
+    currentPoints.geometry.attributes.color.needsUpdate = true;
+  }
+}
 
 function animatePoints(dt) {
   if (!currentPoints || !originalPositions) return;
   clock += dt * ANIM_SPEED;
 
-  // ── advance scan ──────────────────────────────────────────────────────────
-  if (scanActive) {
-    scanT += dt * SCAN_SPEED;
-    if (scanT > 1) scanT = 0; // loop
+  // ── advance hot-point timer ───────────────────────────────────────────────
+  if (hpActive) {
+    hpTimer += dt;
+    if (hpTimer >= hpNextJump) hpPickNewTarget();
   }
 
-  // ── transient detection (modulates distortion at scan line) ───────────────
+  // ── transient detection ───────────────────────────────────────────────────
   let amplitude = 0;
   if (audioReactive && viewerAnalyser && viewerFreqData) {
     viewerAnalyser.getByteTimeDomainData(viewerFreqData);
@@ -1491,29 +1536,34 @@ function animatePoints(dt) {
   transientStrength *= TRANSIENT_DECAY;
   prevAmplitude = amplitude;
 
-  // ── noise drift + scan distortion ─────────────────────────────────────────
+  // ── noise drift ───────────────────────────────────────────────────────────
   const pos   = currentPoints.geometry.attributes.position.array;
   const orig  = originalPositions;
   const n     = pos.length / 3;
   const scale = spherical.radius;
-  const scanWorldPos   = scanMin + scanT * (scanMax - scanMin);
-  const scanWidthWorld = (scanMax - scanMin) * SCAN_WIDTH_FRAC;
-  const distortAmp     = SCAN_DISTORT * scale * (1 + transientStrength * 3);
+  const r2    = hpRadius * hpRadius;
 
   for (let i = 0; i < n; i += 4) {
     const ox = orig[i*3], oy = orig[i*3+1], oz = orig[i*3+2];
     const t  = clock + i * 0.0003;
-    let nx = (noise3(ox * 0.4 + t,       oy * 0.4,           oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
-    let ny = (noise3(ox * 0.4,            oy * 0.4 + t * 1.1, oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
-    let nz = (noise3(ox * 0.4,            oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * scale;
 
-    if (scanActive) {
-      const axisVal    = orig[i*3 + scanAxis];
-      const distToScan = Math.abs(axisVal - scanWorldPos);
-      if (distToScan < scanWidthWorld) {
-        const falloff = 1 - distToScan / scanWidthWorld;
-        ny += Math.sin(clock * 11 + i * 0.07) * falloff * distortAmp;
-        nz += Math.cos(clock *  8 + i * 0.05) * falloff * distortAmp;
+    let nx = 0, ny = 0, nz = 0;
+    if (noiseActive) {
+      nx = (noise3(ox * 0.4 + t,       oy * 0.4,           oz * 0.4          ) - 0.5) * ANIM_SCALE * scale;
+      ny = (noise3(ox * 0.4,            oy * 0.4 + t * 1.1, oz * 0.4          ) - 0.5) * ANIM_SCALE * scale;
+      nz = (noise3(ox * 0.4,            oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * scale;
+    }
+
+    // hot-point distortion
+    if (hpActive) {
+      const dx = ox - hpX, dy = oy - hpY, dz = oz - hpZ;
+      const d2 = dx*dx + dy*dy + dz*dz;
+      if (d2 < r2) {
+        const falloff = 1 - Math.sqrt(d2) / hpRadius;
+        const amp = HP_DISTORT * scale * falloff * (1 + transientStrength * 3);
+        nx += Math.sin(clock * 13 + i * 0.09) * amp;
+        ny += Math.cos(clock *  9 + i * 0.06) * amp;
+        nz += Math.sin(clock * 11 + i * 0.08) * amp;
       }
     }
 
@@ -1523,22 +1573,21 @@ function animatePoints(dt) {
   }
   currentPoints.geometry.attributes.position.needsUpdate = true;
 
-  // ── scan colour sweep ─────────────────────────────────────────────────────
+  // ── hot-point colour ──────────────────────────────────────────────────────
   if (originalColors) {
     const col    = currentPoints.geometry.attributes.color.array;
     const orig_c = originalColors;
     const nc     = col.length / 3;
 
-    if (scanActive) {
-      const brightBoost = 0.65 + transientStrength * 0.35;
+    if (hpActive) {
       for (let i = 0; i < nc; i++) {
-        const axisVal    = orig[i*3 + scanAxis];
-        const distToScan = Math.abs(axisVal - scanWorldPos);
-        if (distToScan < scanWidthWorld) {
-          const f = (1 - distToScan / scanWidthWorld) * brightBoost;
-          col[i*3]   = orig_c[i*3]   + (0.88 - orig_c[i*3])   * f;
-          col[i*3+1] = orig_c[i*3+1] + (0.93 - orig_c[i*3+1]) * f;
-          col[i*3+2] = orig_c[i*3+2] + (1.0  - orig_c[i*3+2]) * f;
+        const dx = orig[i*3] - hpX, dy = orig[i*3+1] - hpY, dz = orig[i*3+2] - hpZ;
+        const d2 = dx*dx + dy*dy + dz*dz;
+        if (d2 < r2) {
+          const f = (1 - Math.sqrt(d2) / hpRadius) * (0.7 + transientStrength * 0.3);
+          col[i*3]   = orig_c[i*3]   + (HP_COLOR_R - orig_c[i*3])   * f;
+          col[i*3+1] = orig_c[i*3+1] + (HP_COLOR_G - orig_c[i*3+1]) * f;
+          col[i*3+2] = orig_c[i*3+2] + (HP_COLOR_B - orig_c[i*3+2]) * f;
         } else {
           col[i*3]   = orig_c[i*3];
           col[i*3+1] = orig_c[i*3+1];
@@ -1557,6 +1606,19 @@ const slider = document.getElementById('point-size-slider');
 slider.addEventListener('input', () => {
   if (currentPoints) {
     currentPoints.material.size = basePointSize * parseFloat(slider.value);
+  }
+});
+
+// ── noise toggle ───────────────────────────────────────────────────────────
+const noiseToggleBtn = document.getElementById('noise-toggle-btn');
+noiseToggleBtn.addEventListener('click', () => {
+  noiseActive = !noiseActive;
+  if (noiseActive) {
+    noiseToggleBtn.textContent = '⏸ noise';
+    noiseToggleBtn.classList.remove('paused');
+  } else {
+    noiseToggleBtn.textContent = '▶ noise';
+    noiseToggleBtn.classList.add('paused');
   }
 });
 
@@ -1598,7 +1660,7 @@ audioPlayBtn.addEventListener('click', () => {
     sonicAudio.addEventListener('ended', () => {
       sonicPlaying = false;
       audioReactive = false;
-      scanActive = false;
+      hpReset();
       audioPlayBtn.classList.remove('playing');
       audioPlayBtn.textContent = '▶ sonification';
       audioProgressFill.style.width = '0%';
@@ -1608,7 +1670,7 @@ audioPlayBtn.addEventListener('click', () => {
     sonicAudio.pause();
     sonicPlaying = false;
     audioReactive = false;
-    scanActive = false;
+    hpReset();
     audioPlayBtn.classList.remove('playing');
     audioPlayBtn.textContent = '▶ play sonification';
   } else {
@@ -1627,12 +1689,12 @@ audioPlayBtn.addEventListener('click', () => {
       } catch(e) {}
     }
     if (viewerAudioCtx.state === 'suspended') viewerAudioCtx.resume();
-    viewerFreqData = new Uint8Array(viewerAnalyser.frequencyBinCount);
+    viewerFreqData = new Uint8Array(viewerAnalyser.fftSize);
     sonicAudio.play();
     sonicPlaying = true;
     audioReactive = true;
-    scanActive = true;
-    scanT = 0;
+    hpActive = true;
+    hpPickNewTarget();
     audioPlayBtn.classList.add('playing');
     audioPlayBtn.textContent = '⏸ pause';
   }
@@ -1720,7 +1782,7 @@ async function loadPLY(room) {
   loading.classList.remove('hidden');
   placeholder.style.display = 'none';
 
-  if (currentPoints) { scene.remove(currentPoints); currentPoints = null; originalPositions = null; originalColors = null; }
+  if (currentPoints) { scene.remove(currentPoints); currentPoints = null; originalPositions = null; originalColors = null; hpPointCount = 0; }
 
   try {
     const response = await fetch(BASE_URL + room.file);
@@ -1736,15 +1798,8 @@ async function loadPLY(room) {
     geometry.boundingBox.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
 
-    // pick longest axis for scan sweep
-    if (size.x >= size.y && size.x >= size.z) {
-      scanAxis = 0; scanMin = geometry.boundingBox.min.x; scanMax = geometry.boundingBox.max.x;
-    } else if (size.y >= size.z) {
-      scanAxis = 1; scanMin = geometry.boundingBox.min.y; scanMax = geometry.boundingBox.max.y;
-    } else {
-      scanAxis = 2; scanMin = geometry.boundingBox.min.z; scanMax = geometry.boundingBox.max.z;
-    }
-    scanT = 0;
+    // hot-point radius = fraction of cloud extent
+    hpRadius = maxDim * HP_RADIUS_FRAC;
     spherical.radius = maxDim * 1.8;
 
     basePointSize = maxDim * 0.003;
@@ -1763,6 +1818,7 @@ async function loadPLY(room) {
     const posArr = geometry.attributes.position.array;
     originalPositions = new Float32Array(posArr.length);
     originalPositions.set(posArr);
+    hpPointCount = posArr.length / 3;
     const colArr = geometry.attributes.color.array;
     originalColors = new Float32Array(colArr.length);
     originalColors.set(colArr);
