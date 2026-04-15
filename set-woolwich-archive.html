@@ -476,6 +476,126 @@ header {
   border-color: rgba(200,184,154,0.2);
 }
 
+/* ── render section ── */
+.render-section {
+  border-bottom: 1px solid var(--rule);
+}
+
+.render-prose {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.9;
+  max-width: 600px;
+  padding: 1.2rem 0 1.2rem;
+}
+
+.render-gallery {
+  display: flex;
+  overflow-x: auto;
+  border-top: 1px solid var(--rule);
+  scrollbar-width: none;
+}
+
+.render-gallery::-webkit-scrollbar { display: none; }
+
+.render-card {
+  flex: 0 0 280px;
+  border-right: 1px solid var(--rule);
+}
+
+.render-card:last-child { border-right: none; }
+
+.render-card img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  display: block;
+  object-fit: cover;
+  background: #050505;
+  border-bottom: 1px solid var(--rule);
+}
+
+.render-card-meta {
+  padding: 1rem;
+}
+
+.render-caption {
+  font-size: 9px;
+  color: var(--dim);
+  line-height: 1.8;
+  margin-top: 0.4rem;
+}
+
+/* ── sonic section ── */
+.sonic-section {
+  border-bottom: 1px solid var(--rule);
+}
+
+.sonic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.sonic-col {
+  padding: 2rem 2rem 2rem 0;
+  border-right: 1px solid var(--rule);
+}
+
+.sonic-col:last-child {
+  border-right: none;
+  padding-left: 2rem;
+  padding-right: 0;
+}
+
+.sonic-spectrum-block {
+  margin-bottom: 1.4rem;
+}
+
+.sonic-spectrum-label {
+  font-size: 8px;
+  color: var(--dim);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+}
+
+.sonic-spectrum-block img {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--rule);
+}
+
+.sonic-prose {
+  font-size: 10px;
+  color: var(--dim);
+  line-height: 1.9;
+  margin-bottom: 1.5rem;
+}
+
+.sonic-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.sonic-row:last-child { border-bottom: none; margin-bottom: 0; }
+
+.sonic-label {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  min-width: 90px;
+}
+
+.sonic-duration {
+  font-size: 9px;
+  color: var(--dim);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
 /* ── programme section ── */
 .programme-section {
   border-bottom: 1px solid var(--rule);
@@ -835,6 +955,10 @@ input[type=range].hud-range::-webkit-slider-thumb {
   .viewer-bar { padding: 0 1.2rem; flex-wrap: wrap; gap: 0; }
   .viewer-controls { width: 100%; border-bottom: 1px solid var(--rule); }
   .room-switcher { flex-wrap: wrap; border-right: 1px solid var(--rule); }
+  .sonic-grid { grid-template-columns: 1fr; }
+  .sonic-col { border-right: none; padding-left: 0; border-bottom: 1px solid var(--rule); }
+  .sonic-col:last-child { padding-left: 0; padding-right: 0; border-bottom: none; }
+  .render-card { flex: 0 0 220px; }
   footer { flex-direction: column; gap: 1rem; align-items: flex-start; }
 }
 </style>
@@ -891,7 +1015,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
 
     <div class="hud-corner hud-tl">
       SAP–001 · <span id="hud-room-name">vault_cinema</span><br>
-      scan session · <span id="hud-room-id">3_vault</span><br>
+      scan session · <span id="hud-room-id">1_vault</span><br>
       <span id="point-count">—</span> pts
     </div>
 
@@ -940,6 +1064,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
       <button class="room-btn unavailable" data-room="2">03 · garden</button>
       <button class="room-btn unavailable" data-room="3">04 · foyer</button>
       <button class="room-btn unavailable" data-room="4">05 · staircase</button>
+      <button class="room-btn unavailable" data-room="4">06 · Entrance</button>
     </div>
     <div class="hud-slider-wrap">
       <span class="hud-slider-label">density</span>
@@ -1000,7 +1125,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
 
       <div class="method-item">
         <div class="method-label">THE ABSENT DATASET AS EVIDENCE</div>
-        <div class="method-body">SET does not appear in NTIA, MVT, GLA, or any heritage framework. The absence is systematic. The methodology begins from the negative space.</div>
+        <div class="method-body">SET Woolwich does not appear in NTIA, MVT, GLA, or any heritage framework. The absence is systematic. The methodology begins from the negative space.</div>
       </div>
 
       <div class="method-item">
@@ -1012,36 +1137,90 @@ input[type=range].hud-range::-webkit-slider-thumb {
 
   </div>
 
-  <!-- rooms -->
-  <div class="rooms-section">
-    <div class="rooms-header section-pad">
-      <div class="section-label" style="flex:1; margin-bottom:1rem;">Scan Sessions</div>
+  <!-- spatial rendering -->
+  <div class="render-section">
+    <div class="section-pad">
+      <div class="section-label">Spatial Rendering</div>
     </div>
-    <div class="rooms-grid">
-      <div class="room-item">
-        <div class="room-num">01 ——</div>
-        <div class="room-name">Reception</div>
-        <div class="room-status scanned">scanned</div>
+    <p class="render-prose">The point cloud is rendered not as a reconstructed surface but as raw spatial data — each point plotted in three-dimensional space, colour-accurate and unsmoothed. The sparseness is not a failure. It is the limit of what the scanner could hold.</p>
+    <div class="render-gallery">
+      <div class="render-card">
+        <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/render_reception.jpg" alt="Reception scan render">
+        <div class="render-card-meta">
+          <div class="room-num">01 ——</div>
+          <div class="room-name">Reception</div>
+          <div class="room-status scanned">scanned</div>
+          <div class="render-caption">Entry corridor. High point density along walls.<br>Ceiling data partially absent.</div>
+        </div>
       </div>
-      <div class="room-item">
-        <div class="room-num">02 ——</div>
-        <div class="room-name">Garden</div>
-        <div class="room-status scanned">scanned</div>
+      <div class="render-card">
+        <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/render_garden.jpg" alt="Garden scan render">
+        <div class="render-card-meta">
+          <div class="room-num">02 ——</div>
+          <div class="room-name">Garden</div>
+          <div class="room-status scanned">scanned</div>
+          <div class="render-caption">Exterior courtyard. Organic geometry — foliage<br>recorded as diffuse point clusters.</div>
+        </div>
       </div>
-      <div class="room-item">
-        <div class="room-num">03 ——</div>
-        <div class="room-name">Vault</div>
-        <div class="room-status scanned">scanned</div>
+      <div class="render-card">
+        <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/render_vault.jpg" alt="Vault scan render">
+        <div class="render-card-meta">
+          <div class="room-num">03 ——</div>
+          <div class="room-name">Vault</div>
+          <div class="room-status scanned">scanned</div>
+          <div class="render-caption">Former HMRC strongroom. Arched ceiling geometry<br>fully captured. Maximum scan density.</div>
+        </div>
       </div>
-      <div class="room-item">
-        <div class="room-num">04 ——</div>
-        <div class="room-name">Foyer</div>
-        <div class="room-status scanned">scanned</div>
+      <div class="render-card">
+        <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/render_foyer.jpg" alt="Foyer scan render">
+        <div class="render-card-meta">
+          <div class="room-num">04 ——</div>
+          <div class="room-name">Foyer</div>
+          <div class="room-status scanned">scanned</div>
+          <div class="render-caption">Ground floor entrance. Transitional space between<br>public and studio zones.</div>
+        </div>
       </div>
-      <div class="room-item">
-        <div class="room-num">05 ——</div>
-        <div class="room-name">Pink Staircase</div>
-        <div class="room-status scanned">scanned</div>
+      <div class="render-card">
+        <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/render_staircase.jpg" alt="Pink Staircase scan render">
+        <div class="render-card-meta">
+          <div class="room-num">05 ——</div>
+          <div class="room-name">Pink Staircase</div>
+          <div class="room-status scanned">scanned</div>
+          <div class="render-caption">Vertical circulation. Multi-level scan — point dropout<br>in lower stair geometry.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- sonification -->
+  <div class="sonic-section">
+    <div class="sonic-grid">
+      <div class="sonic-col">
+        <div class="section-label">Sonification</div>
+        <div class="sonic-spectrum-block">
+          <div class="sonic-spectrum-label">SPECTRUM · SET_ENTRANCE</div>
+          <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/sonification_entrance.png" alt="Entrance sonification spectrum">
+        </div>
+        <div class="sonic-spectrum-block">
+          <div class="sonic-spectrum-label">SPECTRUM · SET_VAULT_3</div>
+          <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/sonification_vault.png" alt="Vault sonification spectrum">
+        </div>
+      </div>
+      <div class="sonic-col">
+        <div class="section-label">&nbsp;</div>
+        <p class="sonic-prose">Each point is treated as a sound event: depth into the space determines the time position, height maps to frequency, point density drives amplitude, and the RGB colour channels shape timbre. Noise profiles are extracted from point-density variations, frequency mappings are derived from vertex distributions, and tonal palettes are generated from colour channels. The geometry becomes an acoustic architecture. The space is heard as it could never have been recorded — from its own coordinates, in its own language.</p>
+        <div class="sonic-row">
+          <span class="sonic-label">set_entrance</span>
+          <button class="audio-play-btn sonic-play-btn" data-src="sonification_entrance.mp3">▶ play</button>
+          <div class="audio-progress" style="flex:1;"><div class="audio-progress-fill"></div></div>
+          <span class="sonic-duration">—:——</span>
+        </div>
+        <div class="sonic-row">
+          <span class="sonic-label">set_vault_3</span>
+          <button class="audio-play-btn sonic-play-btn" data-src="sonification_vault.mp3">▶ play</button>
+          <div class="audio-progress" style="flex:1;"><div class="audio-progress-fill"></div></div>
+          <span class="sonic-duration">—:——</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1054,7 +1233,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
     <div class="output-grid">
       <div class="output-item">
         <div class="output-num">OUT–01</div>
-        <div class="output-title">Audio Essay + Motion Visuals</div>
+        <div class="output-title">Audio Essay and Motion Visuals</div>
         <div class="output-body">Long-form audio essay and motion visuals as a single continuous piece. Geometry, sonification, and community testimony composed together. Voices processed through the spaces' impulse responses. Datamosh transitions between rooms.</div>
         <div class="output-tag">in production</div>
       </div>
@@ -1068,7 +1247,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
         <div class="output-num">OUT–03</div>
         <div class="output-title">Written Documentation</div>
         <div class="output-body">Project methodology, contextual research, and the evidential record of what SET was and what its demolition removed. Structured for preservation, awareness, and future reference. For SET's own archive and wider circulation.</div>
-        <div class="output-tag">in production</div>
+        <div class="output-tag live">available</div>
       </div>
     </div>
   </div>
@@ -1582,6 +1761,71 @@ function animate() {
 }
 animate();
 loadPLY(ROOMS[0]);
+
+// ── sonification audio players ─────────────────────────────────────────────
+const sonicPlayers = [
+  { id: 'entrance', src: BASE_URL + 'sonification_entrance.mp3', audio: null, playing: false },
+  { id: 'vault',    src: BASE_URL + 'sonification_vault.mp3',    audio: null, playing: false },
+];
+
+function initSonicPlayer(player, btnEl, progressEl, durationEl) {
+  if (!player.audio) {
+    player.audio = new Audio(player.src);
+    player.audio.addEventListener('error', () => {
+      btnEl.textContent = '— unavailable';
+      btnEl.disabled = true;
+    });
+    player.audio.addEventListener('loadedmetadata', () => {
+      const m = Math.floor(player.audio.duration / 60);
+      const s = Math.floor(player.audio.duration % 60).toString().padStart(2, '0');
+      durationEl.textContent = `${m}:${s}`;
+    });
+    player.audio.addEventListener('timeupdate', () => {
+      const pct = (player.audio.currentTime / player.audio.duration) * 100;
+      progressEl.style.width = pct + '%';
+    });
+    player.audio.addEventListener('ended', () => {
+      player.playing = false;
+      btnEl.textContent = '▶ play';
+      btnEl.classList.remove('playing');
+      progressEl.style.width = '0%';
+    });
+  }
+}
+
+document.querySelectorAll('.sonic-play-btn').forEach((btn, i) => {
+  const player = sonicPlayers[i];
+  const row = btn.closest('.sonic-row');
+  const progressEl = row.querySelector('.audio-progress-fill');
+  const durationEl = row.querySelector('.sonic-duration');
+
+  btn.addEventListener('click', () => {
+    initSonicPlayer(player, btn, progressEl, durationEl);
+    // pause all others
+    sonicPlayers.forEach((p, j) => {
+      if (j !== i && p.playing) {
+        p.audio.pause();
+        p.playing = false;
+        document.querySelectorAll('.sonic-play-btn')[j].textContent = '▶ play';
+        document.querySelectorAll('.sonic-play-btn')[j].classList.remove('playing');
+      }
+    });
+    if (player.playing) {
+      player.audio.pause();
+      player.playing = false;
+      btn.textContent = '▶ play';
+      btn.classList.remove('playing');
+    } else {
+      player.audio.play().catch(() => {
+        btn.textContent = '— unavailable';
+        btn.disabled = true;
+      });
+      player.playing = true;
+      btn.textContent = '⏸ pause';
+      btn.classList.add('playing');
+    }
+  });
+});
 </script>
 
 </body>
