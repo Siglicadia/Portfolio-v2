@@ -554,8 +554,9 @@ header {
 }
 
 .sonic-waveform {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   display: block;
 }
 
@@ -1442,10 +1443,10 @@ const ANIM_SPEED = 0.18;
 const ANIM_SCALE = 0.008;
 
 // ── reactive audio constants ───────────────────────────────────────────────
-const TRANSIENT_THRESHOLD = 0.08;  // lower = more sensitive to attacks
-const TRANSIENT_DECAY     = 0.82;  // lower = faster snap-back
-const SNAP_SCALE          = 8;     // displacement intensity on transient
-const LIT_FRACTION_MAX    = 0.18;  // max proportion of points that light up
+const TRANSIENT_THRESHOLD = 0.015; // lower = more sensitive to attacks
+const TRANSIENT_DECAY     = 0.72;  // lower = faster snap-back
+const SNAP_SCALE          = 28;    // displacement intensity on transient
+const LIT_FRACTION_MAX    = 0.22;  // max proportion of points that light up
 const LIT_BLUE_BIAS       = 0.5;   // 0 = all white, 1 = all blue
 
 // ── reactive audio state ───────────────────────────────────────────────────
@@ -1468,10 +1469,13 @@ function animatePoints(dt) {
   // ── system 1: transient detection ────────────────────────────────────────
   let amplitude = 0;
   if (audioReactive && viewerAnalyser && viewerFreqData) {
-    viewerAnalyser.getByteFrequencyData(viewerFreqData);
-    let sum = 0;
-    for (let k = 0; k < viewerFreqData.length; k++) sum += viewerFreqData[k];
-    amplitude = (sum / viewerFreqData.length) / 255;
+    viewerAnalyser.getByteTimeDomainData(viewerFreqData);
+    let peak = 0;
+    for (let k = 0; k < viewerFreqData.length; k++) {
+      const v = Math.abs(viewerFreqData[k] - 128) / 128;
+      if (v > peak) peak = v;
+    }
+    amplitude = peak;
   }
   const delta = Math.max(0, amplitude - prevAmplitude);
   if (delta > TRANSIENT_THRESHOLD) {
@@ -1594,7 +1598,7 @@ audioPlayBtn.addEventListener('click', () => {
     if (!viewerAudioCtx) {
       viewerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       viewerAnalyser = viewerAudioCtx.createAnalyser();
-      viewerAnalyser.fftSize = 256;
+      viewerAnalyser.fftSize = 1024;
       viewerAnalyser.connect(viewerAudioCtx.destination);
     }
     if (!sonicAudio._connected) {
@@ -1889,8 +1893,10 @@ const sonicWaveCtx = sonicWaveCanvas ? sonicWaveCanvas.getContext('2d') : null;
 
 function resizeSonicCanvas() {
   if (!sonicWaveCanvas) return;
-  sonicWaveCanvas.width  = sonicWaveCanvas.offsetWidth;
-  sonicWaveCanvas.height = sonicWaveCanvas.offsetHeight;
+  const w = sonicWaveCanvas.offsetWidth  || sonicWaveCanvas.parentElement.offsetWidth  || 400;
+  const h = sonicWaveCanvas.offsetHeight || sonicWaveCanvas.parentElement.offsetHeight || 160;
+  sonicWaveCanvas.width  = w;
+  sonicWaveCanvas.height = h;
   if (!sonicAnimFrame) drawSonicIdle();
 }
 
@@ -1908,17 +1914,18 @@ function drawSonicIdle() {
 
 function drawSonicWaveform() {
   if (!sonicAnalyser || !sonicWaveCtx) return;
-  const bufLen = sonicAnalyser.frequencyBinCount;
+  const bufLen = sonicAnalyser.fftSize;
   const data   = new Uint8Array(bufLen);
   sonicAnalyser.getTimeDomainData(data);
   const W = sonicWaveCanvas.width, H = sonicWaveCanvas.height;
+  if (!W || !H) { sonicAnimFrame = requestAnimationFrame(drawSonicWaveform); return; }
   const step = W / bufLen;
   sonicWaveCtx.clearRect(0, 0, W, H);
   sonicWaveCtx.beginPath();
-  sonicWaveCtx.strokeStyle = 'rgba(200,184,154,0.75)';
+  sonicWaveCtx.strokeStyle = 'rgba(200,184,154,0.8)';
   sonicWaveCtx.lineWidth = 1;
   for (let i = 0; i < bufLen; i++) {
-    const y = (data[i] / 128) * (H / 2);
+    const y = H / 2 + ((data[i] - 128) / 128) * (H / 2);
     if (i === 0) sonicWaveCtx.moveTo(0, y);
     else sonicWaveCtx.lineTo(i * step, y);
   }
