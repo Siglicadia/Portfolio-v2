@@ -433,7 +433,7 @@ header {
 }
 
 .output-item {
-  padding: 1.5rem 2rem 1.5rem 0;
+  padding: 0 2rem 1.5rem 0;
   border-right: 1px solid var(--rule);
 }
 
@@ -486,7 +486,7 @@ header {
   color: var(--dim);
   line-height: 1.9;
   max-width: 600px;
-  padding: 1.2rem 0 1.2rem;
+  padding: 0 0 1.2rem;
 }
 
 .render-gallery {
@@ -530,70 +530,75 @@ header {
   border-bottom: 1px solid var(--rule);
 }
 
-.sonic-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-
 .sonic-col {
-  padding: 2rem 2rem 2rem 0;
-  border-right: 1px solid var(--rule);
-}
-
-.sonic-col:last-child {
-  border-right: none;
-  padding-left: 2rem;
-  padding-right: 0;
-}
-
-.sonic-spectrum-block {
-  margin-bottom: 1.4rem;
-}
-
-.sonic-spectrum-label {
-  font-size: 8px;
-  color: var(--dim);
-  letter-spacing: 0.12em;
-  margin-bottom: 0.4rem;
-}
-
-.sonic-spectrum-block img {
-  width: 100%;
-  display: block;
-  border: 1px solid var(--rule);
+  padding: 2rem 0 1.5rem;
 }
 
 .sonic-prose {
   font-size: 10px;
   color: var(--dim);
   line-height: 1.9;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
-.sonic-row {
+.sonic-player {
+  display: flex;
+  align-items: stretch;
+}
+
+.sonic-waveform-wrap {
+  flex: 1;
+  min-height: 160px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sonic-waveform {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sonic-playlist {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--rule);
+  flex-shrink: 0;
+  width: 240px;
+}
+
+.sonic-track {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  padding: 0.65rem 0 0.65rem 1.2rem;
   border-bottom: 1px solid var(--rule);
+  flex: 1;
 }
 
-.sonic-row:last-child { border-bottom: none; margin-bottom: 0; }
+.sonic-track:last-child {
+  border-bottom: none;
+}
 
-.sonic-label {
+.sonic-track--placeholder {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.sonic-track-label {
   font-size: 9px;
   color: var(--accent);
   letter-spacing: 0.1em;
   white-space: nowrap;
-  min-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
-.sonic-duration {
-  font-size: 9px;
+.sonic-track--placeholder .sonic-track-label {
   color: var(--dim);
-  white-space: nowrap;
-  margin-left: auto;
 }
 
 /* ── programme section ── */
@@ -695,7 +700,7 @@ footer {
   padding: 0.6rem 2.5rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 1.5rem;
   border-bottom: 1px solid var(--rule);
 }
@@ -936,6 +941,10 @@ input[type=range].hud-range::-webkit-slider-thumb {
 .annotation-audio-btn:hover { color: var(--accent); border-color: var(--accent); }
 .annotation-audio-btn.playing { color: var(--accent); }
 
+@media (max-width: 960px) {
+  .sonic-playlist { width: 200px; }
+}
+
 /* ── mobile ── */
 @media (max-width: 768px) {
   .container { padding: 0 1.2rem; }
@@ -955,9 +964,9 @@ input[type=range].hud-range::-webkit-slider-thumb {
   .viewer-bar { padding: 0 1.2rem; flex-wrap: wrap; gap: 0; }
   .viewer-controls { width: 100%; border-bottom: 1px solid var(--rule); }
   .room-switcher { flex-wrap: wrap; border-right: 1px solid var(--rule); }
-  .sonic-grid { grid-template-columns: 1fr; }
-  .sonic-col { border-right: none; padding-left: 0; border-bottom: 1px solid var(--rule); }
-  .sonic-col:last-child { padding-left: 0; padding-right: 0; border-bottom: none; }
+  .sonic-player { flex-direction: column; }
+  .sonic-waveform-wrap { min-height: 100px; border-bottom: 1px solid var(--rule); }
+  .sonic-playlist { width: 100%; border-left: none; }
   .render-card { flex: 0 0 220px; }
   footer { flex-direction: column; gap: 1rem; align-items: flex-start; }
 }
@@ -1193,32 +1202,38 @@ input[type=range].hud-range::-webkit-slider-thumb {
 
   <!-- sonification -->
   <div class="sonic-section">
-    <div class="sonic-grid">
-      <div class="sonic-col">
-        <div class="section-label">Sonification</div>
-        <div class="sonic-spectrum-block">
-          <div class="sonic-spectrum-label">SPECTRUM · SET_ENTRANCE</div>
-          <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/sonification_entrance.png" alt="Entrance sonification spectrum">
-        </div>
-        <div class="sonic-spectrum-block">
-          <div class="sonic-spectrum-label">SPECTRUM · SET_VAULT_3</div>
-          <img src="https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/sonification_vault.png" alt="Vault sonification spectrum">
-        </div>
+    <div class="sonic-col">
+      <div class="section-label">Sonification</div>
+      <p class="sonic-prose">Each point is treated as a sound event: depth into the space determines the time position, height maps to frequency, point density drives amplitude, and the RGB colour channels shape timbre. Noise profiles are extracted from point-density variations, frequency mappings are derived from vertex distributions, and tonal palettes are generated from colour channels. The geometry becomes an acoustic architecture. The space is heard as it could never have been recorded — from its own coordinates, in its own language.</p>
+    </div>
+    <div class="sonic-player">
+      <div class="sonic-waveform-wrap">
+        <canvas class="sonic-waveform" id="sonicWaveform"></canvas>
       </div>
-      <div class="sonic-col">
-        <div class="section-label">&nbsp;</div>
-        <p class="sonic-prose">Each point is treated as a sound event: depth into the space determines the time position, height maps to frequency, point density drives amplitude, and the RGB colour channels shape timbre. Noise profiles are extracted from point-density variations, frequency mappings are derived from vertex distributions, and tonal palettes are generated from colour channels. The geometry becomes an acoustic architecture. The space is heard as it could never have been recorded — from its own coordinates, in its own language.</p>
-        <div class="sonic-row">
-          <span class="sonic-label">set_entrance</span>
+      <div class="sonic-playlist">
+        <div class="sonic-track">
+          <span class="sonic-track-label">set_entrance</span>
           <button class="audio-play-btn sonic-play-btn" data-src="sonification_entrance.mp3">▶ play</button>
-          <div class="audio-progress" style="flex:1;"><div class="audio-progress-fill"></div></div>
-          <span class="sonic-duration">—:——</span>
         </div>
-        <div class="sonic-row">
-          <span class="sonic-label">set_vault_3</span>
+        <div class="sonic-track">
+          <span class="sonic-track-label">set_vault_3</span>
           <button class="audio-play-btn sonic-play-btn" data-src="sonification_vault.mp3">▶ play</button>
-          <div class="audio-progress" style="flex:1;"><div class="audio-progress-fill"></div></div>
-          <span class="sonic-duration">—:——</span>
+        </div>
+        <div class="sonic-track sonic-track--placeholder">
+          <span class="sonic-track-label">set_bar</span>
+          <button class="audio-play-btn" disabled>▶ play</button>
+        </div>
+        <div class="sonic-track sonic-track--placeholder">
+          <span class="sonic-track-label">set_main_floor</span>
+          <button class="audio-play-btn" disabled>▶ play</button>
+        </div>
+        <div class="sonic-track sonic-track--placeholder">
+          <span class="sonic-track-label">set_stage</span>
+          <button class="audio-play-btn" disabled>▶ play</button>
+        </div>
+        <div class="sonic-track sonic-track--placeholder">
+          <span class="sonic-track-label">set_corridor</span>
+          <button class="audio-play-btn" disabled>▶ play</button>
         </div>
       </div>
     </div>
@@ -1314,7 +1329,7 @@ import * as THREE from 'three';
 const BASE_URL = 'https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/';
 
 const ROOMS = [
-  { id: '3_vault',      name: 'vault_cinema',   file: 'vault_cinema.ply', audio: null },
+  { id: '3_vault',      name: 'vault_cinema',   file: 'vault_cinema.ply', audio: 'SAP_sonification_vault_cinema_additive.wav' },
   { id: '1_reception',  name: 'reception',      file: null,               audio: null },
   { id: '2_garden',     name: 'garden',         file: null,               audio: null },
   { id: '4_foyer',      name: 'foyer',          file: null,               audio: null },
@@ -1426,21 +1441,95 @@ let clock = 0;
 const ANIM_SPEED = 0.18;
 const ANIM_SCALE = 0.008;
 
+// ── reactive audio constants ───────────────────────────────────────────────
+const TRANSIENT_THRESHOLD = 0.08;  // lower = more sensitive to attacks
+const TRANSIENT_DECAY     = 0.82;  // lower = faster snap-back
+const SNAP_SCALE          = 8;     // displacement intensity on transient
+const LIT_FRACTION_MAX    = 0.18;  // max proportion of points that light up
+const LIT_BLUE_BIAS       = 0.5;   // 0 = all white, 1 = all blue
+
+// ── reactive audio state ───────────────────────────────────────────────────
+let originalColors    = null;
+let prevAmplitude     = 0;
+let transientStrength = 0;
+let audioReactive     = false;
+let viewerAudioCtx    = null;
+let viewerAnalyser    = null;
+let viewerFreqData    = null;
+
 function animatePoints(dt) {
   if (!currentPoints || !originalPositions) return;
   clock += dt * ANIM_SPEED;
-  const pos = currentPoints.geometry.attributes.position.array;
+  const pos  = currentPoints.geometry.attributes.position.array;
   const orig = originalPositions;
-  const n = pos.length / 3;
-  // Animate every 4th point for performance
+  const n    = pos.length / 3;
+  const scale = spherical.radius;
+
+  // ── system 1: transient detection ────────────────────────────────────────
+  let amplitude = 0;
+  if (audioReactive && viewerAnalyser && viewerFreqData) {
+    viewerAnalyser.getByteFrequencyData(viewerFreqData);
+    let sum = 0;
+    for (let k = 0; k < viewerFreqData.length; k++) sum += viewerFreqData[k];
+    amplitude = (sum / viewerFreqData.length) / 255;
+  }
+  const delta = Math.max(0, amplitude - prevAmplitude);
+  if (delta > TRANSIENT_THRESHOLD) {
+    transientStrength = Math.min(1, transientStrength + delta * 4);
+  }
+  transientStrength *= TRANSIENT_DECAY;
+  prevAmplitude = amplitude;
+
+  // ── system 1: displacement (noise baseline + transient snap) ─────────────
   for (let i = 0; i < n; i += 4) {
     const ox = orig[i*3], oy = orig[i*3+1], oz = orig[i*3+2];
-    const t = clock + i * 0.0003;
-    pos[i*3]   = ox + (noise3(ox * 0.4 + t,       oy * 0.4,           oz * 0.4) - 0.5) * ANIM_SCALE * spherical.radius;
-    pos[i*3+1] = oy + (noise3(ox * 0.4,            oy * 0.4 + t * 1.1, oz * 0.4) - 0.5) * ANIM_SCALE * spherical.radius;
-    pos[i*3+2] = oz + (noise3(ox * 0.4,            oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * spherical.radius;
+    const t  = clock + i * 0.0003;
+    const nx = (noise3(ox * 0.4 + t,         oy * 0.4,           oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
+    const ny = (noise3(ox * 0.4,              oy * 0.4 + t * 1.1, oz * 0.4      ) - 0.5) * ANIM_SCALE * scale;
+    const nz = (noise3(ox * 0.4,              oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * scale;
+    const snapSeed = hash(i * 7.3  + 13.1);
+    const snapDir  = hash(i * 3.7  +  5.9) - 0.5;
+    pos[i*3]   = ox + nx + snapDir              * transientStrength * scale * SNAP_SCALE;
+    pos[i*3+1] = oy + ny + (snapSeed - 0.5)    * transientStrength * scale * SNAP_SCALE;
+    pos[i*3+2] = oz + nz + snapDir * snapSeed  * transientStrength * scale * SNAP_SCALE * 0.75;
   }
   currentPoints.geometry.attributes.position.needsUpdate = true;
+
+  // ── system 2: reactive point lighting ─────────────────────────────────────
+  if (originalColors) {
+    const col  = currentPoints.geometry.attributes.color.array;
+    const orig_c = originalColors;
+    const nc = col.length / 3;
+
+    if (audioReactive && transientStrength > 0.001) {
+      const litFraction = transientStrength * LIT_FRACTION_MAX;
+      const frameHash   = hash(clock * 1000);
+      // performance guard: stride 2 if last frame was slow (>33ms)
+      const stride = dt > 0.033 ? 2 : 1;
+      for (let i = 0; i < nc; i += stride) {
+        const r = hash(i * 0.17 + frameHash * 73.1 + clock * 0.3);
+        if (r < litFraction) {
+          const isBlue = hash(i * 3.1 + frameHash * 17.3) > LIT_BLUE_BIAS;
+          col[i*3]   = isBlue ? 0.75 : 1.0;
+          col[i*3+1] = isBlue ? 0.88 : 1.0;
+          col[i*3+2] = 1.0;
+        } else {
+          col[i*3]   = orig_c[i*3];
+          col[i*3+1] = orig_c[i*3+1];
+          col[i*3+2] = orig_c[i*3+2];
+        }
+        if (stride === 2 && i + 1 < nc) {
+          col[(i+1)*3]   = orig_c[(i+1)*3];
+          col[(i+1)*3+1] = orig_c[(i+1)*3+1];
+          col[(i+1)*3+2] = orig_c[(i+1)*3+2];
+        }
+      }
+    } else {
+      // not reactive or no transient — restore photographic colours
+      col.set(orig_c);
+    }
+    currentPoints.geometry.attributes.color.needsUpdate = true;
+  }
 }
 
 // ── point size slider ──────────────────────────────────────────────────────
@@ -1479,13 +1568,16 @@ audioPlayBtn.addEventListener('click', () => {
     return;
   }
   if (!sonicAudio) {
-    sonicAudio = new Audio(BASE_URL + room.audio);
+    sonicAudio = new Audio();
+    sonicAudio.crossOrigin = 'anonymous';
+    sonicAudio.src = BASE_URL + room.audio;
     sonicAudio.addEventListener('timeupdate', () => {
       const pct = (sonicAudio.currentTime / sonicAudio.duration) * 100;
       audioProgressFill.style.width = pct + '%';
     });
     sonicAudio.addEventListener('ended', () => {
       sonicPlaying = false;
+      audioReactive = false;
       audioPlayBtn.classList.remove('playing');
       audioPlayBtn.textContent = '▶ sonification';
       audioProgressFill.style.width = '0%';
@@ -1494,11 +1586,29 @@ audioPlayBtn.addEventListener('click', () => {
   if (sonicPlaying) {
     sonicAudio.pause();
     sonicPlaying = false;
+    audioReactive = false;
     audioPlayBtn.classList.remove('playing');
     audioPlayBtn.textContent = '▶ play sonification';
   } else {
+    // wire Web Audio analyser on first play
+    if (!viewerAudioCtx) {
+      viewerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      viewerAnalyser = viewerAudioCtx.createAnalyser();
+      viewerAnalyser.fftSize = 256;
+      viewerAnalyser.connect(viewerAudioCtx.destination);
+    }
+    if (!sonicAudio._connected) {
+      try {
+        const src = viewerAudioCtx.createMediaElementSource(sonicAudio);
+        src.connect(viewerAnalyser);
+        sonicAudio._connected = true;
+      } catch(e) {}
+    }
+    if (viewerAudioCtx.state === 'suspended') viewerAudioCtx.resume();
+    viewerFreqData = new Uint8Array(viewerAnalyser.frequencyBinCount);
     sonicAudio.play();
     sonicPlaying = true;
+    audioReactive = true;
     audioPlayBtn.classList.add('playing');
     audioPlayBtn.textContent = '⏸ pause';
   }
@@ -1615,10 +1725,13 @@ async function loadPLY(room) {
     scene.add(points);
     currentPoints = points;
 
-    // Store original positions for animation
+    // Store original positions and colours for animation
     const posArr = geometry.attributes.position.array;
     originalPositions = new Float32Array(posArr.length);
     originalPositions.set(posArr);
+    const colArr = geometry.attributes.color.array;
+    originalColors = new Float32Array(colArr.length);
+    originalColors.set(colArr);
 
     // Place annotation marker at cloud centre
     ANNOTATIONS[0].position.set(0, 0, 0);
@@ -1763,43 +1876,105 @@ loadPLY(ROOMS[0]);
 
 // ── sonification audio players ─────────────────────────────────────────────
 const sonicPlayers = [
-  { id: 'entrance', src: BASE_URL + 'sonification_entrance.mp3', audio: null, playing: false },
-  { id: 'vault',    src: BASE_URL + 'sonification_vault.mp3',    audio: null, playing: false },
+  { id: 'entrance', src: BASE_URL + 'sonification_entrance.mp3', audio: null, playing: false, connected: false },
+  { id: 'vault',    src: BASE_URL + 'SAP_sonification_vault_cinema_additive.wav', audio: null, playing: false, connected: false },
 ];
 
-function initSonicPlayer(player, btnEl, progressEl, durationEl) {
-  if (!player.audio) {
-    player.audio = new Audio(player.src);
-    player.audio.addEventListener('error', () => {
-      btnEl.textContent = '— unavailable';
-      btnEl.disabled = true;
-    });
-    player.audio.addEventListener('loadedmetadata', () => {
-      const m = Math.floor(player.audio.duration / 60);
-      const s = Math.floor(player.audio.duration % 60).toString().padStart(2, '0');
-      durationEl.textContent = `${m}:${s}`;
-    });
-    player.audio.addEventListener('timeupdate', () => {
-      const pct = (player.audio.currentTime / player.audio.duration) * 100;
-      progressEl.style.width = pct + '%';
-    });
-    player.audio.addEventListener('ended', () => {
-      player.playing = false;
-      btnEl.textContent = '▶ play';
-      btnEl.classList.remove('playing');
-      progressEl.style.width = '0%';
-    });
+let sonicAudioCtx = null;
+let sonicAnalyser = null;
+let sonicAnimFrame = null;
+
+const sonicWaveCanvas = document.getElementById('sonicWaveform');
+const sonicWaveCtx = sonicWaveCanvas ? sonicWaveCanvas.getContext('2d') : null;
+
+function resizeSonicCanvas() {
+  if (!sonicWaveCanvas) return;
+  sonicWaveCanvas.width  = sonicWaveCanvas.offsetWidth;
+  sonicWaveCanvas.height = sonicWaveCanvas.offsetHeight;
+  if (!sonicAnimFrame) drawSonicIdle();
+}
+
+function drawSonicIdle() {
+  if (!sonicWaveCtx || !sonicWaveCanvas.width) return;
+  const W = sonicWaveCanvas.width, H = sonicWaveCanvas.height;
+  sonicWaveCtx.clearRect(0, 0, W, H);
+  sonicWaveCtx.beginPath();
+  sonicWaveCtx.strokeStyle = 'rgba(90,86,80,0.35)';
+  sonicWaveCtx.lineWidth = 1;
+  sonicWaveCtx.moveTo(0, H / 2);
+  sonicWaveCtx.lineTo(W, H / 2);
+  sonicWaveCtx.stroke();
+}
+
+function drawSonicWaveform() {
+  if (!sonicAnalyser || !sonicWaveCtx) return;
+  const bufLen = sonicAnalyser.frequencyBinCount;
+  const data   = new Uint8Array(bufLen);
+  sonicAnalyser.getTimeDomainData(data);
+  const W = sonicWaveCanvas.width, H = sonicWaveCanvas.height;
+  const step = W / bufLen;
+  sonicWaveCtx.clearRect(0, 0, W, H);
+  sonicWaveCtx.beginPath();
+  sonicWaveCtx.strokeStyle = 'rgba(200,184,154,0.75)';
+  sonicWaveCtx.lineWidth = 1;
+  for (let i = 0; i < bufLen; i++) {
+    const y = (data[i] / 128) * (H / 2);
+    if (i === 0) sonicWaveCtx.moveTo(0, y);
+    else sonicWaveCtx.lineTo(i * step, y);
+  }
+  sonicWaveCtx.stroke();
+  sonicAnimFrame = requestAnimationFrame(drawSonicWaveform);
+}
+
+function stopSonicWaveform() {
+  if (sonicAnimFrame) { cancelAnimationFrame(sonicAnimFrame); sonicAnimFrame = null; }
+  drawSonicIdle();
+}
+
+function getSonicAudioCtx() {
+  if (!sonicAudioCtx) {
+    sonicAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sonicAnalyser = sonicAudioCtx.createAnalyser();
+    sonicAnalyser.fftSize = 2048;
+    sonicAnalyser.connect(sonicAudioCtx.destination);
+  }
+  if (sonicAudioCtx.state === 'suspended') sonicAudioCtx.resume();
+  return sonicAudioCtx;
+}
+
+function connectSonicPlayer(player) {
+  if (player.connected) return;
+  try {
+    const ctx = getSonicAudioCtx();
+    const src = ctx.createMediaElementSource(player.audio);
+    src.connect(sonicAnalyser);
+    player.connected = true;
+  } catch (e) {
+    // CORS or Web Audio unavailable — play without waveform
   }
 }
 
 document.querySelectorAll('.sonic-play-btn').forEach((btn, i) => {
   const player = sonicPlayers[i];
-  const row = btn.closest('.sonic-row');
-  const progressEl = row.querySelector('.audio-progress-fill');
-  const durationEl = row.querySelector('.sonic-duration');
+  if (!player) return;
 
   btn.addEventListener('click', () => {
-    initSonicPlayer(player, btn, progressEl, durationEl);
+    if (!player.audio) {
+      player.audio = new Audio();
+      player.audio.crossOrigin = 'anonymous';
+      player.audio.src = player.src;
+      player.audio.addEventListener('error', () => {
+        btn.textContent = '— unavailable';
+        btn.disabled = true;
+      });
+      player.audio.addEventListener('ended', () => {
+        player.playing = false;
+        btn.textContent = '▶ play';
+        btn.classList.remove('playing');
+        stopSonicWaveform();
+      });
+    }
+
     // pause all others
     sonicPlayers.forEach((p, j) => {
       if (j !== i && p.playing) {
@@ -1809,12 +1984,15 @@ document.querySelectorAll('.sonic-play-btn').forEach((btn, i) => {
         document.querySelectorAll('.sonic-play-btn')[j].classList.remove('playing');
       }
     });
+
     if (player.playing) {
       player.audio.pause();
       player.playing = false;
       btn.textContent = '▶ play';
       btn.classList.remove('playing');
+      stopSonicWaveform();
     } else {
+      connectSonicPlayer(player);
       player.audio.play().catch(() => {
         btn.textContent = '— unavailable';
         btn.disabled = true;
@@ -1822,9 +2000,15 @@ document.querySelectorAll('.sonic-play-btn').forEach((btn, i) => {
       player.playing = true;
       btn.textContent = '⏸ pause';
       btn.classList.add('playing');
+      if (sonicAnimFrame) cancelAnimationFrame(sonicAnimFrame);
+      sonicAnimFrame = null;
+      drawSonicWaveform();
     }
   });
 });
+
+window.addEventListener('resize', resizeSonicCanvas);
+requestAnimationFrame(resizeSonicCanvas);
 </script>
 
 </body>
