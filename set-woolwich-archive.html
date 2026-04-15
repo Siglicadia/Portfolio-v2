@@ -1459,13 +1459,16 @@ const ANIM_SPEED = 0.18;
 const ANIM_SCALE = 0.008;
 
 // ── hot-point constants ────────────────────────────────────────────────────
-const HP_RADIUS_FRAC  = 0.08;  // influence radius as fraction of cloud extent
-const HP_JUMP_MIN     = 0.25;  // min seconds between jumps
-const HP_JUMP_MAX     = 0.9;   // max seconds between jumps
-const HP_DISTORT      = 0.022; // displacement amplitude at hot point
-const HP_COLOR_R      = 0.55;  // light blue target colour
-const HP_COLOR_G      = 0.82;
-const HP_COLOR_B      = 1.0;
+const HP_COUNT           = 5;     // number of independent jumping points
+const HP_RADIUS_FRAC     = 0.016; // tight spotlight (1/5 of original 0.08)
+const HP_DISTORT         = 0.022; // displacement amplitude within radius
+const HP_COLOR_R         = 0.55;  // light blue
+const HP_COLOR_G         = 0.82;
+const HP_COLOR_B         = 1.0;
+const HP_JUMP_THRESHOLD  = 0.004; // very low — almost any audio triggers jumps
+const HP_SILENCE_THRESH  = 0.002; // below this → points stay static
+const HP_MIN_INTERVAL    = 0.04;  // 40ms minimum between jumps per point
+const HP_MAX_INTERVAL    = 0.15;  // 150ms maximum
 
 // ── transient detection ────────────────────────────────────────────────────
 const TRANSIENT_THRESHOLD = 0.015;
@@ -1479,31 +1482,36 @@ let audioReactive     = false;
 let viewerAudioCtx    = null;
 let viewerAnalyser    = null;
 let viewerFreqData    = null;
-let noiseActive       = true;  // noise motion toggle
+let noiseActive       = true;
 
-// hot point state
-let hpActive      = false;  // true while sonification plays
-let hpX = 0, hpY = 0, hpZ = 0;  // current world-space centre
-let hpTimer       = 0;          // countdown to next jump
-let hpNextJump    = 0.5;        // seconds until next jump
-let hpRadius      = 1;          // world-space influence radius
-let hpPointCount  = 0;          // total point count (for random index pick)
+// hot point state — array of HP_COUNT independent points
+let hpActive     = false;
+let hpPoints     = [];  // [{x, y, z, timer, nextJump}, ...]
+let hpRadius     = 1;   // world-space influence radius
+let hpPointCount = 0;   // total cloud vertex count
 
-function hpPickNewTarget() {
+function hpJumpPoint(p) {
   if (!originalPositions || hpPointCount === 0) return;
-  // pick a random existing point as the new centre
   const idx = Math.floor(Math.random() * hpPointCount);
-  hpX = originalPositions[idx * 3];
-  hpY = originalPositions[idx * 3 + 1];
-  hpZ = originalPositions[idx * 3 + 2];
-  hpNextJump = HP_JUMP_MIN + Math.random() * (HP_JUMP_MAX - HP_JUMP_MIN);
-  hpTimer = 0;
+  p.x = originalPositions[idx * 3];
+  p.y = originalPositions[idx * 3 + 1];
+  p.z = originalPositions[idx * 3 + 2];
+  p.nextJump = HP_MIN_INTERVAL + Math.random() * (HP_MAX_INTERVAL - HP_MIN_INTERVAL);
+  p.timer = 0;
+}
+
+function hpInit() {
+  hpPoints = Array.from({length: HP_COUNT}, (_, k) => {
+    const p = { x: 0, y: 0, z: 0, timer: 0, nextJump: HP_MIN_INTERVAL };
+    hpJumpPoint(p);
+    p.timer = k * (HP_MAX_INTERVAL / HP_COUNT); // stagger after jump resets timer to 0
+    return p;
+  });
 }
 
 function hpReset() {
   hpActive = false;
-  hpTimer  = 0;
-  // restore original colours immediately
+  hpPoints = [];
   if (currentPoints && originalColors) {
     currentPoints.geometry.attributes.color.array.set(originalColors);
     currentPoints.geometry.attributes.color.needsUpdate = true;
@@ -1514,13 +1522,7 @@ function animatePoints(dt) {
   if (!currentPoints || !originalPositions) return;
   clock += dt * ANIM_SPEED;
 
-  // ── advance hot-point timer ───────────────────────────────────────────────
-  if (hpActive) {
-    hpTimer += dt;
-    if (hpTimer >= hpNextJump) hpPickNewTarget();
-  }
-
-  // ── transient detection ───────────────────────────────────────────────────
+  // ── read amplitude ────────────────────────────────────────────────────────
   let amplitude = 0;
   if (audioReactive && viewerAnalyser && viewerFreqData) {
     viewerAnalyser.getByteTimeDomainData(viewerFreqData);
@@ -1531,10 +1533,20 @@ function animatePoints(dt) {
     }
     amplitude = peak;
   }
+
+  // ── transient strength (modulates distortion) ─────────────────────────────
   const delta = Math.max(0, amplitude - prevAmplitude);
   if (delta > TRANSIENT_THRESHOLD) transientStrength = Math.min(1, transientStrength + delta * 4);
   transientStrength *= TRANSIENT_DECAY;
   prevAmplitude = amplitude;
+
+  // ── advance hot-point timers; jump when amplitude breaks silence floor ─────
+  if (hpActive && amplitude > HP_SILENCE_THRESH) {
+    for (const p of hpPoints) {
+      p.timer += dt;
+      if (amplitude > HP_JUMP_THRESHOLD && p.timer >= p.nextJump) hpJumpPoint(p);
+    }
+  }
 
   // ── noise drift ───────────────────────────────────────────────────────────
   const pos   = currentPoints.geometry.attributes.position.array;
@@ -1554,16 +1566,18 @@ function animatePoints(dt) {
       nz = (noise3(ox * 0.4,            oy * 0.4,           oz * 0.4 + t * 0.9) - 0.5) * ANIM_SCALE * scale;
     }
 
-    // hot-point distortion
+    // hot-point distortion — accumulate from all points
     if (hpActive) {
-      const dx = ox - hpX, dy = oy - hpY, dz = oz - hpZ;
-      const d2 = dx*dx + dy*dy + dz*dz;
-      if (d2 < r2) {
-        const falloff = 1 - Math.sqrt(d2) / hpRadius;
-        const amp = HP_DISTORT * scale * falloff * (1 + transientStrength * 3);
-        nx += Math.sin(clock * 13 + i * 0.09) * amp;
-        ny += Math.cos(clock *  9 + i * 0.06) * amp;
-        nz += Math.sin(clock * 11 + i * 0.08) * amp;
+      for (const p of hpPoints) {
+        const dx = ox - p.x, dy = oy - p.y, dz = oz - p.z;
+        const d2 = dx*dx + dy*dy + dz*dz;
+        if (d2 < r2) {
+          const falloff = 1 - Math.sqrt(d2) / hpRadius;
+          const amp = HP_DISTORT * scale * falloff * (1 + transientStrength * 3);
+          nx += Math.sin(clock * 13 + i * 0.09) * amp;
+          ny += Math.cos(clock *  9 + i * 0.06) * amp;
+          nz += Math.sin(clock * 11 + i * 0.08) * amp;
+        }
       }
     }
 
@@ -1579,15 +1593,23 @@ function animatePoints(dt) {
     const orig_c = originalColors;
     const nc     = col.length / 3;
 
-    if (hpActive) {
+    if (hpActive && hpPoints.length > 0) {
       for (let i = 0; i < nc; i++) {
-        const dx = orig[i*3] - hpX, dy = orig[i*3+1] - hpY, dz = orig[i*3+2] - hpZ;
-        const d2 = dx*dx + dy*dy + dz*dz;
-        if (d2 < r2) {
-          const f = (1 - Math.sqrt(d2) / hpRadius) * (0.7 + transientStrength * 0.3);
-          col[i*3]   = orig_c[i*3]   + (HP_COLOR_R - orig_c[i*3])   * f;
-          col[i*3+1] = orig_c[i*3+1] + (HP_COLOR_G - orig_c[i*3+1]) * f;
-          col[i*3+2] = orig_c[i*3+2] + (HP_COLOR_B - orig_c[i*3+2]) * f;
+        const px = orig[i*3], py = orig[i*3+1], pz = orig[i*3+2];
+        // find max falloff across all hot points
+        let maxF = 0;
+        for (const p of hpPoints) {
+          const dx = px - p.x, dy = py - p.y, dz = pz - p.z;
+          const d2 = dx*dx + dy*dy + dz*dz;
+          if (d2 < r2) {
+            const f = (1 - Math.sqrt(d2) / hpRadius) * (0.7 + transientStrength * 0.3);
+            if (f > maxF) maxF = f;
+          }
+        }
+        if (maxF > 0) {
+          col[i*3]   = orig_c[i*3]   + (HP_COLOR_R - orig_c[i*3])   * maxF;
+          col[i*3+1] = orig_c[i*3+1] + (HP_COLOR_G - orig_c[i*3+1]) * maxF;
+          col[i*3+2] = orig_c[i*3+2] + (HP_COLOR_B - orig_c[i*3+2]) * maxF;
         } else {
           col[i*3]   = orig_c[i*3];
           col[i*3+1] = orig_c[i*3+1];
@@ -1690,11 +1712,12 @@ audioPlayBtn.addEventListener('click', () => {
     }
     if (viewerAudioCtx.state === 'suspended') viewerAudioCtx.resume();
     viewerFreqData = new Uint8Array(viewerAnalyser.fftSize);
+    sonicAudio.currentTime = 0;
     sonicAudio.play();
     sonicPlaying = true;
     audioReactive = true;
     hpActive = true;
-    hpPickNewTarget();
+    hpInit();
     audioPlayBtn.classList.add('playing');
     audioPlayBtn.textContent = '⏸ pause';
   }
@@ -1819,6 +1842,7 @@ async function loadPLY(room) {
     originalPositions = new Float32Array(posArr.length);
     originalPositions.set(posArr);
     hpPointCount = posArr.length / 3;
+    if (hpActive) hpInit(); // re-seed hot points into new cloud geometry
     const colArr = geometry.attributes.color.array;
     originalColors = new Float32Array(colArr.length);
     originalColors.set(colArr);
