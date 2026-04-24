@@ -141,20 +141,6 @@ header {
 
 .hud-corner span { color: var(--accent); }
 
-.hud-copy-btn {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  color: var(--dim);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  margin-top: 0.2rem;
-  display: block;
-}
-.hud-copy-btn:hover { color: var(--fg); }
-.hud-copy-btn.copied { color: var(--accent); }
 
 /* corner brackets */
 .bracket {
@@ -1087,8 +1073,7 @@ input[type=range].hud-range::-webkit-slider-thumb {
     </div>
 
     <div class="hud-corner hud-bl">
-      <span id="cam-info">θ — · φ — · r —</span><br>
-      <button class="hud-copy-btn" id="cam-copy-btn">[ copy cam ]</button>
+      <span id="cam-info">θ — · φ — · r —</span>
     </div>
 
     <div class="hud-corner hud-br">
@@ -1130,9 +1115,9 @@ input[type=range].hud-range::-webkit-slider-thumb {
       <button class="room-btn unavailable" data-room="7">08 · pink entrance</button>
     </div>
     <div class="hud-slider-wrap">
-      <button class="hud-noise-btn paused" id="noise-toggle-btn">▶ noise</button>
+      <button class="hud-noise-btn" id="noise-toggle-btn">⏸ noise</button>
       <span class="hud-slider-label">intensity</span>
-      <input type="range" class="hud-range" id="noise-intensity-slider" min="0.2" max="4" step="0.1" value="1">
+      <input type="range" class="hud-range" id="noise-intensity-slider" min="0.2" max="4" step="0.1" value="3.0">
     </div>
   </div>
 </div>
@@ -1412,14 +1397,14 @@ import * as THREE from 'three';
 const BASE_URL = 'https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/';
 
 const ROOMS = [
-  { id: '01_vault',         name: 'vault',         file: 'vault_cinema.ply',               audio: 'SAP_sonification_vault_cinema_additive.wav' },
-  { id: '02_entrance',      name: 'entrance',      file: 'set_woolwich_club_entrance.ply', audio: null },
-  { id: '03_reception',     name: 'reception',     file: 'set_woolwich_reception.ply',     audio: null },
-  { id: '04_garden',        name: 'garden',        file: 'set_woolwich_garden.ply',        audio: null },
-  { id: '05_foyer',         name: 'foyer',         file: 'set_woolwich_foyer.ply',         audio: null },
-  { id: '06_bar',           name: 'bar',           file: 'set_woolwich_bar.ply',           audio: null },
-  { id: '07_elevator',      name: 'elevator',      file: 'set_woolwich_elevator.ply',      audio: null },
-  { id: '08_pink_entrance', name: 'pink entrance', file: 'set_woolwich_pink_entrance.ply', audio: null },
+  { id: '01_vault',         name: 'vault',         file: 'vault_cinema.ply',               audio: 'SAP_sonification_vault_cinema_additive.wav', camera: { theta: -0.900, phi: 1.345, radius: 11.615 } },
+  { id: '02_entrance',      name: 'entrance',      file: 'set_woolwich_club_entrance.ply', audio: null,                                          camera: { theta:  2.265, phi: 1.465, radius:  6.554 } },
+  { id: '03_reception',     name: 'reception',     file: 'set_woolwich_reception.ply',     audio: null,                                          camera: null },
+  { id: '04_garden',        name: 'garden',        file: 'set_woolwich_garden.ply',        audio: null,                                          camera: null },
+  { id: '05_foyer',         name: 'foyer',         file: 'set_woolwich_foyer.ply',         audio: null,                                          camera: null },
+  { id: '06_bar',           name: 'bar',           file: 'set_woolwich_bar.ply',           audio: null,                                          camera: null },
+  { id: '07_elevator',      name: 'elevator',      file: 'set_woolwich_elevator.ply',      audio: null,                                          camera: null },
+  { id: '08_pink_entrance', name: 'pink entrance', file: 'set_woolwich_pink_entrance.ply', audio: null,                                          camera: null },
 ];
 
 // Testimony annotations — populate with real data when available
@@ -1530,8 +1515,8 @@ const ANIM_SPEED = 0.18;
 const ANIM_SCALE = 0.008;
 
 // ── state ──────────────────────────────────────────────────────────────────
-let noiseActive    = false; // off by default — user enables it
-let noiseIntensity = 1.0;   // multiplier set by slider
+let noiseActive    = true;
+let noiseIntensity = 3.0;  // 75% of slider range (0.2–4)
 let ovVertexCount  = 0;
 
 function animatePoints(dt) {
@@ -1579,16 +1564,15 @@ noiseIntensitySlider.addEventListener('input', () => {
   noiseIntensity = parseFloat(noiseIntensitySlider.value);
 });
 
-// ── copy camera position ────────────────────────────────────────────────────
-const camCopyBtn = document.getElementById('cam-copy-btn');
-camCopyBtn.addEventListener('click', () => {
-  const txt = `theta: ${spherical.theta.toFixed(3)}, phi: ${spherical.phi.toFixed(3)}, radius: ${spherical.radius.toFixed(3)}`;
-  navigator.clipboard.writeText(txt).then(() => {
-    camCopyBtn.textContent = '[ copied ]';
-    camCopyBtn.classList.add('copied');
-    setTimeout(() => { camCopyBtn.textContent = '[ copy cam ]'; camCopyBtn.classList.remove('copied'); }, 1500);
-  });
-});
+
+function applyRoomCamera(room) {
+  if (room.camera) {
+    spherical.theta  = room.camera.theta;
+    spherical.phi    = room.camera.phi;
+    spherical.radius = room.camera.radius;
+  }
+  camInfoEl.textContent = `θ ${spherical.theta.toFixed(3)} · φ ${spherical.phi.toFixed(3)} · r ${spherical.radius.toFixed(3)}`;
+}
 
 // ── room switcher ──────────────────────────────────────────────────────────
 document.querySelectorAll('.room-btn').forEach(btn => {
@@ -1600,6 +1584,7 @@ document.querySelectorAll('.room-btn').forEach(btn => {
     btn.classList.add('active');
     hudRoomName.textContent = room.name;
     hudRoomId.textContent = room.id;
+    applyRoomCamera(room);
     loadPLY(room);
   });
 });
@@ -1757,7 +1742,11 @@ async function loadPLY(room) {
     geometry.boundingBox.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
 
-    spherical.radius = maxDim * 1.8;
+    if (room.camera) {
+      applyRoomCamera(room);
+    } else {
+      spherical.radius = maxDim * 1.8;
+    }
 
     basePointSize = maxDim * 0.0015; // sparse — small fixed size
     const material = new THREE.PointsMaterial({
