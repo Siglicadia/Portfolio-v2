@@ -877,107 +877,6 @@ input[type=range].hud-range::-webkit-slider-thumb {
   transition: width 0.1s linear;
 }
 
-/* ── annotation marker ── */
-.annotation-marker {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  pointer-events: all;
-  z-index: 6;
-}
-
-.annotation-marker::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  background: var(--accent);
-  opacity: 0.8;
-}
-
-.annotation-marker::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--accent);
-  animation: pulse-ring 2s ease infinite;
-}
-
-@keyframes pulse-ring {
-  0%   { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(2); opacity: 0; }
-}
-
-/* ── annotation panel ── */
-.annotation-panel {
-  position: absolute;
-  top: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(10,10,10,0.92);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--rule);
-  border-top: 1px solid var(--accent);
-  padding: 1rem 1.2rem;
-  max-width: 320px;
-  width: 90%;
-  z-index: 8;
-  display: none;
-  pointer-events: all;
-}
-
-.annotation-panel.visible { display: block; }
-
-.annotation-panel-close {
-  position: absolute;
-  top: 0.5rem; right: 0.7rem;
-  font-size: 9px;
-  color: var(--dim);
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: 0.1em;
-}
-
-.annotation-panel-close:hover { color: var(--fg); }
-
-.annotation-panel-id {
-  font-size: 8px;
-  color: var(--dim);
-  letter-spacing: 0.15em;
-  margin-bottom: 0.4rem;
-}
-
-.annotation-panel-title {
-  font-size: 11px;
-  color: var(--fg);
-  margin-bottom: 0.5rem;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-.annotation-panel-text {
-  font-size: 10px;
-  color: var(--mid);
-  line-height: 1.8;
-  margin-bottom: 0.8rem;
-}
-
-.annotation-audio-btn {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: var(--dim);
-  background: none;
-  border: 1px solid var(--rule);
-  padding: 4px 8px;
-  cursor: pointer;
-  letter-spacing: 0.1em;
-  transition: color 0.15s;
-}
-
-.annotation-audio-btn:hover { color: var(--accent); border-color: var(--accent); }
-.annotation-audio-btn.playing { color: var(--accent); }
 
 @media (max-width: 960px) {
   .sonic-playlist { width: 200px; }
@@ -1082,15 +981,6 @@ input[type=range].hud-range::-webkit-slider-thumb {
     </div>
 
     <div class="hud-cross"></div>
-
-    <!-- annotation panel -->
-    <div class="annotation-panel" id="annotation-panel">
-      <button class="annotation-panel-close" id="annotation-close">[ close ]</button>
-      <div class="annotation-panel-id" id="annotation-id">TESTIMONY–001</div>
-      <div class="annotation-panel-title" id="annotation-title">—</div>
-      <div class="annotation-panel-text" id="annotation-text">—</div>
-      <button class="annotation-audio-btn" id="annotation-audio-btn" style="display:none;">▶ play testimony</button>
-    </div>
 
   </div>
 </div>
@@ -1277,11 +1167,11 @@ input[type=range].hud-range::-webkit-slider-thumb {
       <div class="sonic-playlist">
         <div class="sonic-track">
           <span class="sonic-track-label">set_entrance</span>
-          <button class="audio-play-btn sonic-play-btn" data-src="sonification_entrance.mp3">▶ play</button>
+          <button class="audio-play-btn sonic-play-btn" data-src="entrance.wav">▶ play</button>
         </div>
         <div class="sonic-track">
           <span class="sonic-track-label">set_vault_3</span>
-          <button class="audio-play-btn sonic-play-btn" data-src="sonification_vault.mp3">▶ play</button>
+          <button class="audio-play-btn sonic-play-btn" data-src="vault.wav">▶ play</button>
         </div>
         <div class="sonic-track sonic-track--placeholder">
           <span class="sonic-track-label">set_bar</span>
@@ -1393,8 +1283,8 @@ import * as THREE from 'three';
 const BASE_URL = 'https://pub-7883c51dd416434a9b277e564bebb291.r2.dev/';
 
 const ROOMS = [
-  { id: '01_vault',         name: 'vault',         file: 'vault_cinema.ply',               audio: 'SAP_sonification_vault_cinema_additive.wav', camera: { theta: -0.900, phi: 1.345, radius: 11.615 } },
-  { id: '02_entrance',      name: 'entrance',      file: 'set_woolwich_club_entrance.ply', audio: null,                                          camera: { theta:  2.265, phi: 1.465, radius:  6.554 } },
+  { id: '01_vault',         name: 'vault',         file: 'vault_cinema.ply',               audio: 'vault.wav',    camera: { theta: -0.900, phi: 1.345, radius: 11.615 } },
+  { id: '02_entrance',      name: 'entrance',      file: 'set_woolwich_club_entrance.ply', audio: 'entrance.wav', camera: { theta:  2.265, phi: 1.465, radius:  6.554 } },
   { id: '03_reception',     name: 'reception',     file: 'set_woolwich_reception.ply',     audio: null,                                          camera: null },
   { id: '04_garden',        name: 'garden',        file: 'set_woolwich_garden.ply',        audio: null,                                          camera: null },
   { id: '05_foyer',         name: 'foyer',         file: 'set_woolwich_foyer.ply',         audio: null,                                          camera: null },
@@ -1403,17 +1293,6 @@ const ROOMS = [
   { id: '08_pink_entrance', name: 'pink entrance', file: 'set_woolwich_pink_entrance.ply', audio: null,                                          camera: null },
 ];
 
-// Testimony annotations — populate with real data when available
-// audioSrc: filename on R2, or null
-const ANNOTATIONS = [
-  {
-    id: 'TESTIMONY–001',
-    title: 'The Vault',
-    text: 'Testimony placeholder — add real text here. Each annotation can carry a spoken account processed through the room\'s impulse response.',
-    audioSrc: null,
-    position: new THREE.Vector3(0, 0, 0),
-  }
-];
 
 // ── renderer ───────────────────────────────────────────────────────────────
 const canvas = document.getElementById('three-canvas');
@@ -1581,6 +1460,14 @@ document.querySelectorAll('.room-btn').forEach(btn => {
     hudRoomName.textContent = room.name;
     hudRoomId.textContent = room.id;
     applyRoomCamera(room);
+    // reset scan audio for the new room
+    if (sonicAudio) { sonicAudio.pause(); sonicAudio = null; }
+    sonicPlaying = false;
+    overlayActive = false;
+    audioPlayBtn.classList.remove('playing');
+    audioPlayBtn.textContent = '▶ scan';
+    audioProgressFill.style.width = '0%';
+    audioPlayBtn.disabled = !room.audio;
     loadPLY(room);
   });
 });
@@ -1594,10 +1481,7 @@ const audioProgressFill = document.getElementById('audio-progress-fill');
 audioPlayBtn.addEventListener('click', () => {
   const activeIdx = parseInt(document.querySelector('.room-btn.active')?.dataset.room || 0);
   const room = ROOMS[activeIdx];
-  if (!room.audio) {
-    audioPlayBtn.textContent = '— no audio yet';
-    return;
-  }
+  if (!room.audio) return;
   if (!sonicAudio) {
     sonicAudio = new Audio();
     sonicAudio.src = BASE_URL + room.audio;
@@ -1629,80 +1513,6 @@ audioPlayBtn.addEventListener('click', () => {
   }
 });
 
-// ── annotation panel ───────────────────────────────────────────────────────
-const annotationPanel = document.getElementById('annotation-panel');
-const annotationClose = document.getElementById('annotation-close');
-const annotationId = document.getElementById('annotation-id');
-const annotationTitle = document.getElementById('annotation-title');
-const annotationText = document.getElementById('annotation-text');
-const annotationAudioBtn = document.getElementById('annotation-audio-btn');
-let annotationAudio = null;
-
-annotationClose.addEventListener('click', () => {
-  annotationPanel.classList.remove('visible');
-  if (annotationAudio) { annotationAudio.pause(); annotationAudio = null; }
-});
-
-annotationAudioBtn.addEventListener('click', () => {
-  const ann = ANNOTATIONS[0];
-  if (!ann.audioSrc) return;
-  if (!annotationAudio) {
-    annotationAudio = new Audio(BASE_URL + ann.audioSrc);
-    annotationAudio.addEventListener('ended', () => {
-      annotationAudioBtn.classList.remove('playing');
-      annotationAudioBtn.textContent = '▶ play testimony';
-    });
-  }
-  if (annotationAudio.paused) {
-    annotationAudio.play();
-    annotationAudioBtn.classList.add('playing');
-    annotationAudioBtn.textContent = '⏸ pause';
-  } else {
-    annotationAudio.pause();
-    annotationAudioBtn.classList.remove('playing');
-    annotationAudioBtn.textContent = '▶ play testimony';
-  }
-});
-
-function showAnnotation(ann) {
-  annotationId.textContent = ann.id;
-  annotationTitle.textContent = ann.title;
-  annotationText.textContent = ann.text;
-  annotationAudioBtn.style.display = ann.audioSrc ? 'inline-block' : 'none';
-  annotationPanel.classList.add('visible');
-}
-
-// Raycaster for clicking annotations (invisible sphere proxies)
-const raycaster = new THREE.Raycaster();
-const mouse2d = new THREE.Vector2();
-const annotationMeshes = [];
-
-function buildAnnotationMarkers() {
-  annotationMeshes.forEach(m => scene.remove(m));
-  annotationMeshes.length = 0;
-  ANNOTATIONS.forEach((ann, i) => {
-    const geo = new THREE.SphereGeometry(0.04, 6, 6);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xc8b89a, transparent: true, opacity: 0.0 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.copy(ann.position);
-    mesh.userData.annotationIndex = i;
-    scene.add(mesh);
-    annotationMeshes.push(mesh);
-  });
-}
-
-canvas.addEventListener('click', e => {
-  if (isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  mouse2d.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse2d.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(mouse2d, camera);
-  const hits = raycaster.intersectObjects(annotationMeshes);
-  if (hits.length > 0) {
-    const idx = hits[0].object.userData.annotationIndex;
-    showAnnotation(ANNOTATIONS[idx]);
-  }
-});
 
 // ── PLY loader ─────────────────────────────────────────────────────────────
 let _loadAbort = null; // AbortController for in-flight fetch
@@ -1762,10 +1572,6 @@ async function loadPLY(room) {
     originalPositions.set(posArr);
     ovVertexCount = posArr.length / 3;
     if (overlayActive) ovPickEmitters(); // re-seed overlay into new cloud geometry
-
-    // Place annotation marker at cloud centre
-    ANNOTATIONS[0].position.set(0, 0, 0);
-    buildAnnotationMarkers();
 
     const total   = geometry.userData.totalCount   || geometry.attributes.position.count;
     const sampled = geometry.userData.sampledCount || geometry.attributes.position.count;
@@ -2103,8 +1909,8 @@ loadPLY(ROOMS[0]);
 
 // ── sonification audio players ─────────────────────────────────────────────
 const sonicPlayers = [
-  { id: 'entrance', src: BASE_URL + 'sonification_entrance.mp3', audio: null, playing: false, connected: false },
-  { id: 'vault',    src: BASE_URL + 'SAP_sonification_vault_cinema_additive.wav', audio: null, playing: false, connected: false },
+  { id: 'entrance', src: BASE_URL + 'entrance.wav', audio: null, playing: false, connected: false },
+  { id: 'vault',    src: BASE_URL + 'vault.wav',    audio: null, playing: false, connected: false },
 ];
 
 let sonicAudioCtx = null;
@@ -2155,7 +1961,7 @@ function drawSonicWaveform() {
   if (sonicAnalyser) {
     const bufLen = sonicAnalyser.fftSize;
     const data   = new Uint8Array(bufLen);
-    sonicAnalyser.getTimeDomainData(data);
+    sonicAnalyser.getByteTimeDomainData(data);
     // check analyser has live data (not flat silence)
     let hasSignal = false;
     for (let k = 0; k < Math.min(bufLen, 128); k++) {
