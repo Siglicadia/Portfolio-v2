@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Proficiency Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --text: #1a1915;
+    --muted: #6b6960;
+    --accent: #2d6a4f;
+    --accent-light: #d8f3dc;
+    --accent-text: #1b4332;
+    --warn: #b5451b;
+    --warn-light: #fdf0eb;
+    --warn-text: #7c2d12;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .container { max-width: 760px; margin: 0 auto; }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.25rem;
+  }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; }
+
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+  .tab {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    font-family: var(--sans);
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+
+  .code {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: var(--mono);
+    font-size: 13px;
+    border-radius: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0.5rem 0;
+    line-height: 1.6;
+  }
+  .code .kw { color: #569cd6; }
+  .code .str { color: #ce9178; }
+  .code .cm { color: #6a9955; }
+  .code .mk { color: #4ec9b0; }
+
+  .preview {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 0.5rem 0;
+    border-left: 3px solid var(--border);
+  }
+  .preview h1 { font-size: 1.4em; margin-bottom: 0.25rem; }
+  .preview h2 { font-size: 1.2em; margin-bottom: 0.2rem; }
+  .preview h3 { font-size: 1.05em; margin-bottom: 0.2rem; }
+  .preview strong { font-weight: 700; }
+  .preview em { font-style: italic; }
+  .preview code { font-family: var(--mono); font-size: 12px; background: #e8e8e0; padding: 1px 5px; border-radius: 3px; }
+  .preview blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--muted); margin: 4px 0; }
+  .preview a { color: var(--accent); text-decoration: underline; }
+  .preview ul { padding-left: 1.2em; }
+  .preview ol { padding-left: 1.2em; }
+  .preview hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  @media (max-width: 560px) { .split { grid-template-columns: 1fr; } }
+  .split-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-family: var(--mono); font-size: 12px; background: var(--surface2); padding: 1px 6px; border-radius: 3px; }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; }
+  .badge-tip { background: var(--accent-light); color: var(--accent-text); }
+  .badge-warn { background: var(--warn-light); color: var(--warn-text); }
+  .badge-key { background: #ede9fe; color: #4c1d95; }
+
+  p.note { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin: 0.5rem 0; }
+
+  /* Quiz */
+  .progress { font-size: 13px; color: var(--muted); margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; }
+  .prog-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+  .quiz-q { font-size: 15px; font-weight: 500; margin-bottom: 1rem; line-height: 1.5; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt {
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; font-size: 13.5px; font-family: var(--sans);
+    color: var(--text); background: var(--surface);
+    text-align: left; transition: all 0.15s; line-height: 1.5;
+  }
+  .quiz-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+  .quiz-opt.correct { background: var(--accent-light); border-color: var(--accent); color: var(--accent-text); font-weight: 500; }
+  .quiz-opt.wrong { background: var(--warn-light); border-color: var(--warn); color: var(--warn-text); }
+  .quiz-opt.reveal { background: var(--accent-light); border-color: var(--accent); color: var(--accent-text); }
+  .quiz-exp {
+    display: none; margin-top: 0.75rem; padding: 10px 14px;
+    background: var(--surface2); border-radius: 8px;
+    font-size: 13px; color: var(--muted); line-height: 1.6;
+    border-left: 3px solid var(--accent);
+  }
+  .quiz-exp.show { display: block; }
+  .next-btn {
+    display: none; margin-top: 1rem; padding: 8px 20px;
+    border: 1px solid var(--accent); border-radius: 8px;
+    font-size: 13.5px; font-family: var(--sans);
+    cursor: pointer; background: var(--accent); color: #fff;
+  }
+  .next-btn.show { display: inline-block; }
+  .score-box { text-align: center; padding: 3rem 1rem; }
+  .score-num { font-size: 56px; font-weight: 600; color: var(--accent); letter-spacing: -0.04em; }
+  .score-sub { font-size: 15px; color: var(--muted); margin-top: 0.25rem; }
+  .score-msg { font-size: 1.1rem; font-weight: 500; margin: 0.75rem 0 1.5rem; }
+  .restart-btn {
+    padding: 10px 24px; border: 1px solid var(--accent); border-radius: 8px;
+    font-size: 14px; font-family: var(--sans);
+    cursor: pointer; background: transparent; color: var(--accent);
+    transition: all 0.15s;
+  }
+  .restart-btn:hover { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Markdown proficiency guide</h1>
+  <p class="subtitle">Interactive reference + practice quiz — open in Safari for full experience</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="basics">Basics</button>
+    <button class="tab" data-tab="lists">Lists</button>
+    <button class="tab" data-tab="links">Links & images</button>
+    <button class="tab" data-tab="code">Code</button>
+    <button class="tab" data-tab="tables">Tables</button>
+    <button class="tab" data-tab="advanced">Advanced</button>
+    <button class="tab" data-tab="gotchas">Gotchas</button>
+    <button class="tab" data-tab="quiz">Practice quiz</button>
+  </div>
+
+  <!-- BASICS -->
+  <div class="section active" id="tab-basics">
+    <div class="card">
+      <h3>Headings</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code"># Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <h1>Heading 1</h1>
+            <h2>Heading 2</h2>
+            <h3>Heading 3</h3>
+            <p style="font-size:0.95em;font-weight:600">Heading 4</p>
+            <p style="font-size:0.85em;font-weight:600">Heading 5</p>
+            <p style="font-size:0.8em;font-weight:600;color:#555">Heading 6</p>
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-warn">Gotcha</span>
+      <p class="note">You must have a space after the <code>#</code> — <code>#Heading</code> does not render as a heading in most parsers.</p>
+    </div>
+
+    <div class="card">
+      <h3>Emphasis</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">**bold text**
+__also bold__
+
+*italic text*
+_also italic_
+
+***bold and italic***
+~~strikethrough~~</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <p><strong>bold text</strong></p>
+            <p><strong>also bold</strong></p>
+            <p><em>italic text</em></p>
+            <p><em>also italic</em></p>
+            <p><strong><em>bold and italic</em></strong></p>
+            <p><s>strikethrough</s></p>
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-tip">Tip</span>
+      <p class="note">Prefer <code>**</code> for bold and <code>*</code> for italic — underscores can cause issues mid-word (e.g. <code>some_var_name</code> may render unexpectedly).</p>
+    </div>
+
+    <div class="card">
+      <h3>Paragraphs & line breaks</h3>
+      <table>
+        <tr><th>What you want</th><th>How to do it</th></tr>
+        <tr><td>New paragraph</td><td>Leave a blank line between text</td></tr>
+        <tr><td>Line break (soft)</td><td>End a line with two spaces, then press Enter</td></tr>
+        <tr><td>Hard line break</td><td>Use <code>&lt;br&gt;</code> (HTML, works in most flavours)</td></tr>
+        <tr><td>Horizontal rule</td><td><code>---</code> or <code>***</code> or <code>___</code> (three or more)</td></tr>
+      </table>
+      <span class="badge badge-warn" style="margin-top:0.75rem">Gotcha</span>
+      <p class="note">A single line break in your source is ignored. You need a blank line for a new paragraph, or two trailing spaces for a line break within a paragraph.</p>
+    </div>
+
+    <div class="card">
+      <h3>Blockquotes</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">> This is a blockquote.
+>
+> It can span multiple paragraphs.
+
+>> Nested blockquote</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <blockquote>This is a blockquote.<br><br>It can span multiple paragraphs.</blockquote>
+            <blockquote><blockquote>Nested blockquote</blockquote></blockquote>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTS -->
+  <div class="section" id="tab-lists">
+    <div class="card">
+      <h3>Unordered lists</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">- Item one
+- Item two
+  - Nested item
+  - Another nested
+- Item three
+
+* Also works with asterisks
++ Or plus signs</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <ul>
+              <li>Item one</li>
+              <li>Item two
+                <ul><li>Nested item</li><li>Another nested</li></ul>
+              </li>
+              <li>Item three</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-tip">Tip</span>
+      <p class="note">Nest items by indenting with 2 or 4 spaces (varies by flavour). Be consistent — mixing indent levels without proper spacing breaks nesting.</p>
+    </div>
+
+    <div class="card">
+      <h3>Ordered lists</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">1. First item
+2. Second item
+   1. Nested numbered
+   2. Also nested
+3. Third item
+
+1. You can use 1. for all
+1. Markdown auto-increments
+1. The numbers</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <ol>
+              <li>First item</li>
+              <li>Second item
+                <ol><li>Nested numbered</li><li>Also nested</li></ol>
+              </li>
+              <li>Third item</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-key">Key fact</span>
+      <p class="note">The actual numbers you use don't matter — Markdown only uses the <em>first</em> number in a list to set the start, then auto-increments. All <code>1.</code> is perfectly valid.</p>
+    </div>
+
+    <div class="card">
+      <h3>Task lists (GFM)</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">- [x] Completed task
+- [ ] Incomplete task
+- [x] Another done item</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <ul style="list-style:none;padding-left:0">
+              <li>✅ Completed task</li>
+              <li>⬜ Incomplete task</li>
+              <li>✅ Another done item</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="note">Task lists are a GitHub Flavored Markdown (GFM) extension — not in the original spec. Works on GitHub, GitLab, many editors. The space inside <code>[ ]</code> is required for unchecked.</p>
+    </div>
+
+    <div class="card">
+      <h3>Loose vs tight lists</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Tight (no blank lines)</div>
+          <div class="code">- Item one
+- Item two
+- Item three</div>
+        </div>
+        <div>
+          <div class="split-label">Loose (blank lines between)</div>
+          <div class="code">- Item one
+
+- Item two
+
+- Item three</div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:0.5rem">Loose lists wrap each item in a <code>&lt;p&gt;</code> tag, adding vertical spacing. Tight lists don't. This is a common test question.</p>
+    </div>
+  </div>
+
+  <!-- LINKS & IMAGES -->
+  <div class="section" id="tab-links">
+    <div class="card">
+      <h3>Inline links</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">[Link text](https://example.com)
+
+[With title](https://example.com "Tooltip text")
+
+[Relative link](./other-page.md)
+
+&lt;https://auto-linked.com&gt;
+
+&lt;email@example.com&gt;</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <p><a href="#">Link text</a></p>
+            <p><a href="#" title="Tooltip text">With title</a></p>
+            <p><a href="#">Relative link</a></p>
+            <p><a href="#">https://auto-linked.com</a></p>
+            <p><a href="#">email@example.com</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Reference-style links</h3>
+      <div class="code">[Link text][ref-id]
+
+[Another link][1]
+
+&lt;!-- Definitions anywhere in the document: --&gt;
+[ref-id]: https://example.com "Optional title"
+[1]: https://another.com</div>
+      <p class="note" style="margin-top:0.5rem">Definitions can go anywhere — top, bottom, or inline. IDs are case-insensitive. Useful for reusing the same URL multiple times.</p>
+    </div>
+
+    <div class="card">
+      <h3>Images</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">![Alt text](image.png)
+
+![Alt](image.png "Optional title")
+
+&lt;!-- Reference style: --&gt;
+![Alt text][img-ref]
+
+[img-ref]: image.png "Title"</div>
+        </div>
+        <div>
+          <div class="split-label">Notes</div>
+          <div class="preview">
+            <p>Same syntax as links but with <strong>!</strong> prefix.</p>
+            <p>Alt text is important for accessibility and appears if image fails to load.</p>
+            <p>Markdown alone can't set image width/height — use HTML <code>&lt;img&gt;</code> for that.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Linking an image</h3>
+      <div class="code">&lt;!-- Wrap image syntax in link syntax: --&gt;
+[![Alt text](image.png)](https://example.com)
+
+&lt;!-- Image reference inside link: --&gt;
+[![Alt][img-id]][link-id]</div>
+      <p class="note" style="margin-top:0.5rem">Images and links can be combined by wrapping the <code>![...](...)</code> syntax inside a <code>[...](...)</code> link.</p>
+    </div>
+  </div>
+
+  <!-- CODE -->
+  <div class="section" id="tab-code">
+    <div class="card">
+      <h3>Inline code</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">Use `backticks` for inline code.
+
+Use ``double backticks if your
+code contains a `backtick` itself``.</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <p>Use <code>backticks</code> for inline code.</p>
+            <p>Use <code>double backticks if your code contains a `backtick` itself</code>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Fenced code blocks</h3>
+      <div class="code">```python
+def hello(name):
+    print(f"Hello, {name}!")
+```
+
+~~~javascript
+const greet = name => `Hello, ${name}!`;
+~~~</div>
+      <span class="badge badge-tip">Tip</span>
+      <p class="note">Specify a language after the opening fence for syntax highlighting. Both backtick fences (<code>```</code>) and tilde fences (<code>~~~</code>) work. The language identifier is optional but recommended.</p>
+    </div>
+
+    <div class="card">
+      <h3>Indented code blocks (original spec)</h3>
+      <div class="code">Normal paragraph here.
+
+    This is a code block.
+    Indented with 4 spaces or 1 tab.
+    No language highlighting support.
+
+Back to normal.</div>
+      <span class="badge badge-warn">Gotcha</span>
+      <p class="note">Indented code blocks are in the original Markdown spec but fenced blocks (<code>```</code>) are preferred in modern flavours. A blank line before the indented block is required.</p>
+    </div>
+
+    <div class="card">
+      <h3>Escaping backticks inside code</h3>
+      <table>
+        <tr><th>Goal</th><th>Syntax</th></tr>
+        <tr><td>Single backtick in inline code</td><td><code>`` `tick` ``</code> (double-fence with spaces)</td></tr>
+        <tr><td>Backtick in fenced block</td><td>Use more backticks in the fence: <code>````</code></td></tr>
+        <tr><td>Literal backtick outside code</td><td><code>\`</code> (backslash escape)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLES -->
+  <div class="section" id="tab-tables">
+    <div class="card">
+      <h3>Basic table syntax (GFM)</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">| Name  | Score | Grade |
+|-------|-------|-------|
+| Alice | 95    | A     |
+| Bob   | 82    | B     |
+| Carol | 71    | C     |</div>
+        </div>
+        <div>
+          <div class="split-label">Rendered</div>
+          <div class="preview">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <tr style="border-bottom:1px solid #ccc"><th style="text-align:left;padding:4px 8px">Name</th><th style="text-align:left;padding:4px 8px">Score</th><th style="text-align:left;padding:4px 8px">Grade</th></tr>
+              <tr><td style="padding:4px 8px">Alice</td><td style="padding:4px 8px">95</td><td style="padding:4px 8px">A</td></tr>
+              <tr><td style="padding:4px 8px">Bob</td><td style="padding:4px 8px">82</td><td style="padding:4px 8px">B</td></tr>
+              <tr><td style="padding:4px 8px">Carol</td><td style="padding:4px 8px">71</td><td style="padding:4px 8px">C</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:0.5rem">Tables are a GFM extension — not in the original Markdown spec. The separator row (dashes) is required. Column widths don't need to align visually, but it helps readability.</p>
+    </div>
+
+    <div class="card">
+      <h3>Column alignment</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">| Left  | Centre | Right |
+|:------|:------:|------:|
+| text  | text   | text  |
+| more  | more   | more  |</div>
+        </div>
+        <div>
+          <div class="split-label">How colons control alignment</div>
+          <div class="preview">
+            <p><code>|:---|</code> — left aligned (default)</p>
+            <p><code>|:---:|</code> — centre aligned</p>
+            <p><code>|---:|</code> — right aligned</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Table tips & limits</h3>
+      <table>
+        <tr><th>Topic</th><th>Detail</th></tr>
+        <tr><td>Outer pipes</td><td>Optional but recommended for clarity. <code>Name | Score</code> works without leading/trailing <code>|</code>.</td></tr>
+        <tr><td>Cell content</td><td>Can contain inline formatting: bold, italic, inline code, links</td></tr>
+        <tr><td>Merging cells</td><td>Not supported in standard Markdown — use HTML <code>&lt;table&gt;</code> for that</td></tr>
+        <tr><td>Multi-line cells</td><td>Not supported — each row must be one line</td></tr>
+        <tr><td>Minimum dashes</td><td>At least one <code>-</code> per separator cell is required</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADVANCED -->
+  <div class="section" id="tab-advanced">
+    <div class="card">
+      <h3>Escaping special characters</h3>
+      <p class="note">Prefix with <code>\</code> to render these literally:</p>
+      <div class="code">\ ` * _ { } [ ] ( ) # + - . ! |
+
+\*not italic\*   →   *not italic*
+\# not a heading →   # not a heading</div>
+    </div>
+
+    <div class="card">
+      <h3>HTML in Markdown</h3>
+      <div class="code">&lt;!-- Most flavours allow raw HTML --&gt;
+&lt;strong&gt;Bold via HTML&lt;/strong&gt;
+&lt;br&gt;
+&lt;details&gt;
+  &lt;summary&gt;Click to expand&lt;/summary&gt;
+  Hidden content here.
+&lt;/details&gt;
+
+&lt;!-- Useful for things Markdown can't do: --&gt;
+&lt;img src="image.png" width="300" alt="sized image"&gt;
+&lt;div align="center"&gt;Centred content&lt;/div&gt;</div>
+      <p class="note" style="margin-top:0.5rem">Raw HTML works in most Markdown processors (CommonMark, GFM) but may be sanitised on some platforms (e.g. Reddit strips most HTML).</p>
+    </div>
+
+    <div class="card">
+      <h3>Footnotes (extended syntax)</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">Here is a claim.[^1]
+
+Another sentence.[^note]
+
+[^1]: This is the footnote.
+[^note]: This footnote has a name.</div>
+        </div>
+        <div>
+          <div class="split-label">Notes</div>
+          <div class="preview">
+            <p>Supported in GFM, Pandoc, MultiMarkdown. Not in CommonMark core spec.</p>
+            <p>Definitions can go anywhere; they always render at the bottom.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Markdown flavours — what differs</h3>
+      <table>
+        <tr><th>Feature</th><th>CommonMark</th><th>GFM</th><th>Pandoc</th></tr>
+        <tr><td>Tables</td><td>✗</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Task lists</td><td>✗</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Strikethrough</td><td>✗</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Footnotes</td><td>✗</td><td>✗</td><td>✓</td></tr>
+        <tr><td>Auto-links</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Math (LaTeX)</td><td>✗</td><td>✗*</td><td>✓</td></tr>
+      </table>
+      <p class="note" style="margin-top:0.5rem">*GitHub added LaTeX math support (using <code>$...$</code>) in 2022, but it's not in the official GFM spec.</p>
+    </div>
+
+    <div class="card">
+      <h3>Definition lists (Pandoc / MultiMarkdown)</h3>
+      <div class="code">Term
+:   Definition here.
+:   Another definition for the same term.
+
+Another Term
+:   Its definition.</div>
+    </div>
+  </div>
+
+  <!-- GOTCHAS -->
+  <div class="section" id="tab-gotchas">
+    <div class="card">
+      <h3>The most commonly tested edge cases</h3>
+      <table>
+        <tr><th>Gotcha</th><th>Detail</th></tr>
+        <tr><td>Space after <code>#</code></td><td><code>#Heading</code> renders as text in most parsers. Must be <code># Heading</code>.</td></tr>
+        <tr><td>Single line break ignored</td><td>One newline = same paragraph. Need blank line for new paragraph, or 2 trailing spaces for a line break.</td></tr>
+        <tr><td>Underscore in words</td><td><code>some_var_name</code> — underscores mid-word may not trigger italics in CommonMark, but can in older parsers. Prefer <code>*</code>.</td></tr>
+        <tr><td>Ordered list numbers</td><td>Only the first number matters. <code>3. item</code> as first item starts list at 3. After that, auto-increments regardless of your numbers.</td></tr>
+        <tr><td>Blank line before block elements</td><td>Code blocks, blockquotes, and lists often need a blank line before them to render correctly, especially after a paragraph.</td></tr>
+        <tr><td>Indentation in lists</td><td>To continue a paragraph inside a list item, indent 4 spaces. To add a code block inside a list, indent 8 spaces.</td></tr>
+        <tr><td>Table separator</td><td>The <code>|---|</code> row is mandatory. Without it, nothing renders as a table.</td></tr>
+        <tr><td>Empty task list</td><td><code>[ ]</code> must have a space inside. <code>[]</code> renders as literal text, not a checkbox.</td></tr>
+        <tr><td>Backslash escapes</td><td>Only work on ASCII punctuation. <code>\n</code> is not a newline in Markdown — it's literally <code>\n</code>.</td></tr>
+        <tr><td>ATX vs setext headings</td><td>Setext: underline with <code>===</code> or <code>---</code>. Only H1 and H2. A line of dashes directly under text can accidentally become a heading.</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Setext headings (the accidental heading)</h3>
+      <div class="split">
+        <div>
+          <div class="split-label">Markdown</div>
+          <div class="code">Heading 1
+=========
+
+Heading 2
+---------
+
+<!-- DANGER: this becomes H2! -->
+Some paragraph text
+-------------------</div>
+        </div>
+        <div>
+          <div class="split-label">Explanation</div>
+          <div class="preview">
+            <p>If you put <code>---</code> on the line directly below any text, it becomes an H2 heading — even if you meant it as a horizontal rule.</p>
+            <p>Leave a blank line before <code>---</code> to get a horizontal rule instead.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Trailing spaces — invisible but meaningful</h3>
+      <div class="code">This line ends with two spaces  
+So this becomes a new line within the same paragraph.
+
+This line ends with zero spaces
+So this is joined to the previous line.</div>
+      <span class="badge badge-warn">Gotcha</span>
+      <p class="note">Two trailing spaces create a <code>&lt;br&gt;</code>. This is invisible in most editors and is a classic exam trick. Some linters strip trailing spaces automatically, breaking this behaviour.</p>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="section" id="tab-quiz">
+    <div id="quiz-container"></div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "Which of the following correctly creates a Heading 2 in Markdown?",
+    opts: ["##Heading 2", "## Heading 2", "**Heading 2**", "==Heading 2=="],
+    ans: 1,
+    exp: "A space after the # signs is required in CommonMark and GFM. ##Heading2 renders as literal text. ==...== is not standard Markdown syntax."
+  },
+  {
+    q: "You write a list starting with '3. First item'. What number does the rendered list start at?",
+    opts: ["1 — Markdown always starts from 1", "3 — the first number is used as the start", "0 — lists are zero-indexed", "It depends on the parser"],
+    ans: 1,
+    exp: "CommonMark and GFM use the number on the first item to set the starting point. So '3. First item' renders as a list starting at 3. Subsequent numbers in the source are ignored."
+  },
+  {
+    q: "What does '[ ]' (square brackets with a space) in a list item produce in GitHub Flavored Markdown?",
+    opts: ["A footnote reference", "An unchecked task list checkbox", "A literal '[ ]' — it has no special meaning", "A link with no URL"],
+    ans: 1,
+    exp: "In GFM, '- [ ]' produces an unchecked checkbox and '- [x]' produces a checked one. The space inside the brackets is required — '[]' with no space renders as literal text."
+  },
+  {
+    q: "How do you create a line break within a paragraph (not a new paragraph)?",
+    opts: ["Press Enter once", "Press Enter twice", "End the line with two spaces, then press Enter", "Use \\n"],
+    ans: 2,
+    exp: "A single newline is ignored (joins the line to the next). Two newlines create a new paragraph. Two trailing spaces + Enter creates a &lt;br&gt; line break. \\n is not a newline in Markdown."
+  },
+  {
+    q: "Which syntax correctly right-aligns a table column?",
+    opts: ["|---:|", "|:---|", "|:---:|", "|===|"],
+    ans: 0,
+    exp: "Colons in the separator row control alignment: ':---' = left, ':---:' = centre, '---:' = right. The colon goes on the right side for right-alignment."
+  },
+  {
+    q: "You want inline code that itself contains a backtick character. What is the correct approach?",
+    opts: [
+      "Escape it: \\`backtick\\`",
+      "Use double backticks as the fence: `` `tick` ``",
+      "Use a code block instead",
+      "It is not possible in standard Markdown"
+    ],
+    ans: 1,
+    exp: "Double backticks (`` ` ``) as the opening and closing fence allow a single backtick inside the inline code. You also need a space between the fence and the inner backtick."
+  },
+  {
+    q: "A line of '---' immediately below a line of text will render as:",
+    opts: ["A horizontal rule", "A Heading 2 (setext style)", "A Heading 1", "An unordered list"],
+    ans: 1,
+    exp: "This is the setext heading syntax. Text followed immediately by '---' on the next line renders as an H2. To get a horizontal rule, you need a blank line before the '---'."
+  },
+  {
+    q: "Tables are part of which Markdown specification?",
+    opts: ["The original Markdown by John Gruber (2004)", "CommonMark", "GitHub Flavored Markdown (GFM)", "All of the above"],
+    ans: 2,
+    exp: "Tables were introduced in GitHub Flavored Markdown and are NOT in the original Markdown spec or CommonMark core spec. They are supported in GFM, Pandoc, and many modern editors, but not universally."
+  },
+  {
+    q: "What does ![Alt text](image.png) produce compared to [Alt text](image.png)?",
+    opts: [
+      "They are identical — the ! is optional",
+      "The ! makes it an image instead of a link",
+      "The ! makes the link open in a new tab",
+      "! indicates a required (non-optional) link"
+    ],
+    ans: 1,
+    exp: "The ! prefix converts link syntax into image syntax. [text](url) is a hyperlink. ![alt](url) embeds an image with the given alt text. The rest of the syntax is identical."
+  },
+  {
+    q: "Which of these will NOT render as italic text?",
+    opts: ["*italic*", "_italic_", "__italic__", "All three render as italic"],
+    ans: 2,
+    exp: "__text__ (double underscore) renders as BOLD, not italic. Single underscore _text_ renders as italic. *text* also renders as italic. Double asterisk **text** renders as bold."
+  }
+];
+
+let current = 0, score = 0, answered = false;
+
+function renderQuiz() {
+  const c = document.getElementById('quiz-container');
+  if (current >= questions.length) {
+    const pct = Math.round(score / questions.length * 100);
+    const msg = pct >= 90 ? 'Outstanding!' : pct >= 70 ? 'Solid work!' : 'Keep at it!';
+    c.innerHTML = `<div class="card score-box">
+      <div class="score-num">${score}/${questions.length}</div>
+      <div class="score-sub">${pct}% correct</div>
+      <div class="score-msg">${msg}</div>
+      <button class="restart-btn" onclick="current=0;score=0;answered=false;renderQuiz()">Restart quiz</button>
+    </div>`;
+    return;
+  }
+  const q = questions[current];
+  const pct = Math.round(current / questions.length * 100);
+  c.innerHTML = `
+    <div class="progress">
+      <span>Question ${current + 1} of ${questions.length} &nbsp;·&nbsp; Score: ${score}</span>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="card">
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((o,i) => `<button class="quiz-opt" onclick="pick(${i})">${o}</button>`).join('')}
+      </div>
+      <div class="quiz-exp" id="exp">${q.exp}</div>
+      <button class="next-btn" id="nxt" onclick="next()">${current < questions.length - 1 ? 'Next question →' : 'See results →'}</button>
+    </div>`;
+}
+
+function pick(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts[i].classList.add(i === q.ans ? 'correct' : 'wrong');
+  if (i !== q.ans) opts[q.ans].classList.add('reveal');
+  if (i === q.ans) score++;
+  document.getElementById('exp').classList.add('show');
+  document.getElementById('nxt').classList.add('show');
+}
+
+function next() { current++; answered = false; renderQuiz(); }
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'quiz') renderQuiz();
+  });
+});
+</script>
+</body>
+</html>
