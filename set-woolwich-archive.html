@@ -1083,12 +1083,6 @@ input[type=range].hud-range::-webkit-slider-thumb {
 
     <div class="hud-cross"></div>
 
-    <!-- sonification audio player -->
-    <div class="audio-player">
-      <button class="audio-play-btn" id="audio-play-btn">▶ sonification</button>
-      <div class="audio-progress"><div class="audio-progress-fill" id="audio-progress-fill"></div></div>
-    </div>
-
     <!-- annotation panel -->
     <div class="annotation-panel" id="annotation-panel">
       <button class="annotation-panel-close" id="annotation-close">[ close ]</button>
@@ -1118,6 +1112,8 @@ input[type=range].hud-range::-webkit-slider-thumb {
       <button class="hud-noise-btn" id="noise-toggle-btn">⏸ noise</button>
       <span class="hud-slider-label">intensity</span>
       <input type="range" class="hud-range" id="noise-intensity-slider" min="0.2" max="4" step="0.1" value="3.0">
+      <button class="hud-noise-btn" id="audio-play-btn">▶ scan</button>
+      <div class="audio-progress" style="width:60px;"><div class="audio-progress-fill" id="audio-progress-fill"></div></div>
     </div>
   </div>
 </div>
@@ -1613,7 +1609,7 @@ audioPlayBtn.addEventListener('click', () => {
       sonicPlaying = false;
       overlayActive = false;
       audioPlayBtn.classList.remove('playing');
-      audioPlayBtn.textContent = '▶ sonification';
+      audioPlayBtn.textContent = '▶ scan';
       audioProgressFill.style.width = '0%';
     });
   }
@@ -1622,14 +1618,14 @@ audioPlayBtn.addEventListener('click', () => {
     sonicPlaying = false;
     overlayActive = false;
     audioPlayBtn.classList.remove('playing');
-    audioPlayBtn.textContent = '▶ play sonification';
+    audioPlayBtn.textContent = '▶ scan';
   } else {
     sonicAudio.play();
     sonicPlaying = true;
     overlayActive = true;
     ovPickEmitters();
     audioPlayBtn.classList.add('playing');
-    audioPlayBtn.textContent = '⏸ pause';
+    audioPlayBtn.textContent = '⏸ scan';
   }
 });
 
@@ -1918,13 +1914,18 @@ function ovPickEmitters() {
   if (!originalPositions || ovVertexCount === 0) return;
   ovEmitters   = [];
   trailHistory = [];
-  const count = Math.min(OV_TOTAL, ovVertexCount); // never request more verts than exist
+  const count = Math.min(OV_TOTAL, ovVertexCount);
   const step  = Math.max(1, Math.floor(ovVertexCount / count));
   for (let i = 0; i < count; i++) {
     const base  = i * step;
     const range = Math.min(step, ovVertexCount - base);
-    if (range <= 0) break; // shouldn't happen, but guard anyway
-    ovEmitters.push(base + Math.floor(Math.random() * range));
+    if (range <= 0) break;
+    const idx = base + Math.floor(Math.random() * range);
+    ovEmitters.push({
+      idx,
+      timer:    Math.random() * 0.3,           // stagger initial jumps
+      nextJump: 0.05 + Math.random() * 0.25,   // 50–300 ms per emitter
+    });
   }
 }
 
@@ -1969,8 +1970,18 @@ function renderOverlay(dt) {
 
   if (!currentPoints || ovEmitters.length === 0) return;
 
+  // tick emitter timers — jump each to a new random vertex when its interval fires
+  for (const e of ovEmitters) {
+    e.timer += dt;
+    if (e.timer >= e.nextJump) {
+      e.timer    = 0;
+      e.nextJump = 0.05 + Math.random() * 0.25;
+      e.idx      = Math.floor(Math.random() * ovVertexCount);
+    }
+  }
+
   // project all emitter vertices this frame
-  const pts = ovEmitters.map(idx => ovProject(idx)).filter(Boolean);
+  const pts = ovEmitters.map(e => ovProject(e.idx)).filter(Boolean);
   if (pts.length === 0) return;
 
   // ── D: scanlines + interference blips ─────────────────────────────────────
