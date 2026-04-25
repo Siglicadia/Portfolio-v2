@@ -220,6 +220,28 @@
 
   .two-col > div { flex: 1; min-width: 220px; }
 
+  /* ── confidence dots ── */
+  .conf-bar {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 7px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+
+  .conf-dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--bold);
+  }
+
+  .conf-dot.off {
+    background: var(--ghost);
+  }
+
   /* ── mobile ── */
   @media (max-width: 620px) {
     body { padding: 1.5rem 1.5rem 4rem; }
@@ -283,7 +305,7 @@
 
   <div class="entry">
     <div class="entry-title-ongoing">Muir Art Archive<span class="tag">ongoing</span></div>
-    <div class="entry-meta">Restorative Publication<span class="entry-contact">— enquire for access</span></div>
+    <div class="entry-meta">Archival Reanimation<span class="entry-contact">— enquire for access</span></div>
   </div>
 
   <div class="entry">
@@ -330,7 +352,7 @@
 
   <div class="entry">
     <a href="https://soundcloud.com/elysium-archive" target="_blank">
-      <div class="entry-title">Elyisum Archive <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2022</span></div>
+      <div class="entry-title">Elysium Archive <span style="font-weight:400; font-size:0.85em;"></span><span class="tag">2022</span></div>
     </a>
     <div class="entry-meta">Visual Design · Music Collectivity · <a href="files/Elysium Archive.pdf" target="_blank">PDF</a><span class="tag"></span></div>
   </div>
@@ -346,7 +368,7 @@
   <div class="ghost-label">Roles</div>
 
   <div class="entry">
-    <div class="exp-title">Senior AI Data Trainer<span class="exp-org">Invisible Technologies</span><span class="tag">May 2024 – Present</span></div>
+    <div class="exp-title">AI Research Analyst<span class="exp-org">Invisible Technologies</span><span class="tag">May 2024 – Present</span></div>
     <div class="exp-body">RLHF · Research · Justifications · Evaluations · Transcriptions</div>
   </div>
 
@@ -378,14 +400,33 @@
   <div class="two-col">
 
     <div class="info-block">
-      <strong>Spatial Rendering</strong><br>
-      3D Scanner App · Polycam · COLMAP · MeshLab · CloudCompare · CorbeauSplat · SuperSplat · Record3D<br><br>
-      <strong>AV &amp; Post</strong><br>
-      After Effects · Ableton Live · TouchDesigner · Blender · Unreal Engine <br><br>
-      <strong>Creative Coding</strong><br>
-      Python · HTML / CSS / JS · P5.js · Three.js · ML &amp; data pipelines<br><br>
-      <strong>Design</strong><br>
-      InDesign · Photoshop · Illustrator · Figma · ComfyUI
+      <strong>Spatial Capture &amp; Reconstruction</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot off"></span></span><br>
+      COLMAP · Brush · MeshLab · CloudCompare · SuperSplat · nerfstudio<br><br>
+
+      <strong>Sonic Methods</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span></span><br>
+      Ableton Live · audio manipulation · environmental recordings · spatial sonification<br><br>
+
+      <strong>Audio-Visual &amp; Real-Time</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot off"></span></span><br>
+      TouchDesigner · After Effects · Blender · Unreal Engine · Krea<br><br>
+      <!--
+      <strong>Computer Vision &amp; ML</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot off"></span><span class="conf-dot off"></span><span class="conf-dot off"></span><span class="conf-dot off"></span></span><br>
+      Python · YOLOv8 / YOLO11 · Roboflow · Hugging Face · Mtriage · Ollama · ComfyUI<br><br>
+      -->
+      <strong>Data & Analysis</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot off"></span><span class="conf-dot off"></span></span><br>
+      Python · Excel · survival analysis · predictive modelling<br><br>
+      
+      <strong>Creative Coding</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot off"></span><span class="conf-dot off"></span></span><br>
+      Three.js · WebGL · Canvas API · Web Audio API · GSAP · Locomotive Scroll · DOM manipulation<br><br>
+
+      <strong>Design &amp; Publication</strong>
+      <span class="conf-bar"><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span><span class="conf-dot"></span></span><br>
+      InDesign · Photoshop · Illustrator · Lightroom<br><br>
     </div>
 
 
@@ -395,11 +436,39 @@
 
 <hr class="rule">
 
-
-
-<!-- Certificates -->
+<!-- Methods -->
 <div class="block">
-  <div class="ghost-label">Certificates</div>
+  <div class="ghost-label">Methods</div>
+
+  <div class="two-col">
+
+    <div class="info-block">
+      <strong>OSINT &amp; Open Data Analysis</strong><br>
+      source verification · reverse image / geolocation · satellite imagery analysis · open infrastructure datasets · dataset archaeology<br><br>
+
+      <strong>Forensic &amp; Speculative Research</strong><br>
+      recursive forensics · counter-algorithmic restoration · counter-forensic methodology · photogrammetric evidence · speculative reconstruction · archival reanimation<br><br>
+
+      <strong>AI Evaluation</strong><br>
+      RLHF evaluation · surrogate data labelling<br><br>
+
+      <strong>Field Research</strong><br>
+      site-specific acoustic documentation · environmental sensing · spatial ethnography · non-extractive archival<br><br>
+
+      <strong>Heritage &amp; Digital Publication</strong><br>
+      collective co-production · digital heritage platforms · large-format editorial · accessible publication design
+    </div>
+
+  </div>
+</div>
+
+<hr class="rule">
+
+
+
+<!-- Qualifications -->
+<div class="block">
+  <div class="ghost-label">Qualifications</div>
 
   <div class="two-col">
 
