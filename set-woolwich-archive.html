@@ -1413,6 +1413,38 @@ function animatePoints(dt) {
     }
     currentPoints.geometry.attributes.position.needsUpdate = true;
   }
+
+  // ── scan audio: localised random distortion at each emitter ──────────────
+  if (overlayActive && scanAmp > 0.02 && ovEmitters.length > 0) {
+    const pos  = currentPoints.geometry.attributes.position.array;
+    const orig = originalPositions;
+    const distScale = basePointSize * 6 * scanAmp; // intense but localised
+    for (const e of ovEmitters) {
+      if (!e.distortVerts) continue;
+      for (const vi of e.distortVerts) {
+        pos[vi*3]   = orig[vi*3]   + (Math.random() - 0.5) * distScale;
+        pos[vi*3+1] = orig[vi*3+1] + (Math.random() - 0.5) * distScale;
+        pos[vi*3+2] = orig[vi*3+2] + (Math.random() - 0.5) * distScale;
+      }
+    }
+    currentPoints.geometry.attributes.position.needsUpdate = true;
+    _scanDistortDirty = true;
+  } else if (_scanDistortDirty && !noiseActive) {
+    // clean up residual displaced verts when audio stops and noise is off
+    const pos = currentPoints.geometry.attributes.position.array;
+    for (const e of ovEmitters) {
+      if (!e.distortVerts) continue;
+      for (const vi of e.distortVerts) {
+        pos[vi*3]   = originalPositions[vi*3];
+        pos[vi*3+1] = originalPositions[vi*3+1];
+        pos[vi*3+2] = originalPositions[vi*3+2];
+      }
+    }
+    currentPoints.geometry.attributes.position.needsUpdate = true;
+    _scanDistortDirty = false;
+  } else if (!overlayActive) {
+    _scanDistortDirty = false;
+  }
 }
 
 // ── noise toggle ───────────────────────────────────────────────────────────
@@ -1462,6 +1494,7 @@ document.querySelectorAll('.room-btn').forEach(btn => {
     applyRoomCamera(room);
     // reset scan audio for the new room
     if (sonicAudio) { sonicAudio.pause(); sonicAudio = null; }
+    scanSrcNode = null; // force re-connect for new Audio element
     sonicPlaying = false;
     overlayActive = false;
     audioPlayBtn.classList.remove('playing');
@@ -1484,6 +1517,7 @@ audioPlayBtn.addEventListener('click', () => {
   if (!room.audio) return;
   if (!sonicAudio) {
     sonicAudio = new Audio();
+    sonicAudio.crossOrigin = 'anonymous';
     sonicAudio.src = BASE_URL + room.audio;
     sonicAudio.addEventListener('timeupdate', () => {
       const pct = (sonicAudio.currentTime / sonicAudio.duration) * 100;
@@ -1504,6 +1538,7 @@ audioPlayBtn.addEventListener('click', () => {
     audioPlayBtn.classList.remove('playing');
     audioPlayBtn.textContent = '▶ scan';
   } else {
+    connectScanAudio();
     sonicAudio.play();
     sonicPlaying = true;
     overlayActive = true;
@@ -1513,6 +1548,48 @@ audioPlayBtn.addEventListener('click', () => {
   }
 });
 
+
+function connectScanAudio() {
+  if (!sonicAudio || scanSrcNode) return;
+  try {
+    const ctx    = getSonicAudioCtx();
+    scanAnalyser = ctx.createAnalyser();
+    scanAnalyser.fftSize = 256;
+    scanFreqData = new Uint8Array(scanAnalyser.frequencyBinCount);
+    scanSrcNode  = ctx.createMediaElementSource(sonicAudio);
+    scanSrcNode.connect(scanAnalyser);
+    scanAnalyser.connect(ctx.destination);
+  } catch(e) { /* CORS or WebAudio unavailable */ }
+}
+
+function readScanAudio(dt) {
+  if (!scanAnalyser || !sonicPlaying || !scanFreqData) {
+    const d = dt * 5;
+    scanAmp  = Math.max(0, scanAmp  - d);
+    scanLow  = Math.max(0, scanLow  - d);
+    scanHigh = Math.max(0, scanHigh - d);
+    return;
+  }
+  scanAnalyser.getByteFrequencyData(scanFreqData);
+  const bins     = scanFreqData.length;
+  const lowEnd   = Math.floor(bins * 0.2);
+  const highStart = Math.floor(bins * 0.55);
+  let rawAmp = 0, rawLow = 0, rawHigh = 0;
+  for (let i = 0; i < bins; i++) {
+    const v = scanFreqData[i] / 255;
+    rawAmp += v;
+    if (i < lowEnd)          rawLow  += v;
+    else if (i >= highStart) rawHigh += v;
+  }
+  rawAmp  /= bins;
+  rawLow  /= Math.max(1, lowEnd);
+  rawHigh /= Math.max(1, bins - highStart);
+  // fast attack, medium release
+  const s = 0.14;
+  scanAmp  += (rawAmp  - scanAmp)  * s;
+  scanLow  += (rawLow  - scanLow)  * s;
+  scanHigh += (rawHigh - scanHigh) * s;
+}
 
 // ── PLY loader ─────────────────────────────────────────────────────────────
 let _loadAbort = null; // AbortController for in-flight fetch
@@ -1713,8 +1790,27 @@ const CON_DIST   = 170;  // px — max distance for constellation line
 const SCAN_SPD   = 22;   // px / second per scanline sweep
 const SCAN_N     = 3;    // number of scanlines
 
-let ovEmitters   = [];   // vertex indices into originalPositions
+let ovEmitters   = [];   // {idx, timer, nextJump, distortVerts}
 let trailHistory = [];   // [{x, y, life}]
+
+// ── scan audio analysis ─────────────────────────────────────────────────────
+let scanAnalyser = null;
+let scanSrcNode  = null;
+let scanFreqData = null;
+let scanAmp  = 0;   // 0–1 smoothed overall amplitude → jump speed
+let scanLow  = 0;   // 0–1 bass energy → jump speed weight
+let scanHigh = 0;   // 0–1 treble energy → opacity flash
+let _scanDistortDirty = false;
+
+function pickDistortVerts(centerIdx, n) {
+  const verts = [];
+  const W = 500; // ±500 buffer indices around the emitter
+  for (let i = 0; i < n; i++) {
+    const offset = Math.floor((Math.random() * 2 - 1) * W);
+    verts.push(Math.max(0, Math.min(ovVertexCount - 1, centerIdx + offset)));
+  }
+  return verts;
+}
 
 function ovPickEmitters() {
   if (!originalPositions || ovVertexCount === 0) return;
@@ -1729,8 +1825,9 @@ function ovPickEmitters() {
     const idx = base + Math.floor(Math.random() * range);
     ovEmitters.push({
       idx,
-      timer:    Math.random() * 0.3,           // stagger initial jumps
-      nextJump: 0.05 + Math.random() * 0.25,   // 50–300 ms per emitter
+      timer:        Math.random() * 0.3,
+      nextJump:     0.05 + Math.random() * 0.25,
+      distortVerts: pickDistortVerts(idx, 50),
     });
   }
 }
@@ -1774,15 +1871,25 @@ function renderOverlay(dt) {
   const a = overlayAlpha;
   overlayCtx.clearRect(0, 0, W, H);
 
+  // audio-reactive opacity: quiet audio = dim (0.12), loud = full (1.0)
+  // high-freq spikes flash the brightness; low-freq drives sustained glow
+  const audioMult = sonicPlaying
+    ? Math.min(1, 0.12 + scanAmp * 0.55 + scanHigh * 0.45)
+    : 1.0;
+  const aa = a * audioMult; // composite: master-fade × audio-level
+
   if (!currentPoints || ovEmitters.length === 0) return;
 
   // tick emitter timers — jump each to a new random vertex when its interval fires
+  // low-frequency energy shrinks the interval → faster jumps
+  const jumpBase = Math.max(0.02, (0.04 + Math.random() * 0.18) * (1 - scanLow * 0.88));
   for (const e of ovEmitters) {
     e.timer += dt;
     if (e.timer >= e.nextJump) {
-      e.timer    = 0;
-      e.nextJump = 0.05 + Math.random() * 0.25;
-      e.idx      = Math.floor(Math.random() * ovVertexCount);
+      e.timer       = 0;
+      e.nextJump    = jumpBase * (0.5 + Math.random());
+      e.idx         = Math.floor(Math.random() * ovVertexCount);
+      e.distortVerts = pickDistortVerts(e.idx, 50);
     }
   }
 
@@ -1812,7 +1919,7 @@ function renderOverlay(dt) {
         const str = 1 - dy / 20;
         // vertical spike through the scanline
         overlayCtx.save();
-        overlayCtx.globalAlpha = str * 0.55 * a;
+        overlayCtx.globalAlpha = str * 0.55 * aa;
         overlayCtx.strokeStyle = '#7ec8f4';
         overlayCtx.lineWidth = 1;
         overlayCtx.beginPath();
@@ -1820,7 +1927,7 @@ function renderOverlay(dt) {
         overlayCtx.lineTo(p.x, sy + str * 9);
         overlayCtx.stroke();
         // bright segment of scanline at that x
-        overlayCtx.globalAlpha = str * 0.3 * a;
+        overlayCtx.globalAlpha = str * 0.3 * aa;
         overlayCtx.lineWidth = 1.5;
         overlayCtx.beginPath();
         overlayCtx.moveTo(p.x - 18 * str, sy);
@@ -1839,7 +1946,7 @@ function renderOverlay(dt) {
       const d  = Math.sqrt(dx * dx + dy * dy);
       if (d < CON_DIST) {
         overlayCtx.save();
-        overlayCtx.globalAlpha = (1 - d / CON_DIST) * 0.20 * a;
+        overlayCtx.globalAlpha = (1 - d / CON_DIST) * 0.20 * aa;
         overlayCtx.strokeStyle = '#7ec8f4';
         overlayCtx.lineWidth = 0.5;
         overlayCtx.beginPath();
@@ -1855,7 +1962,7 @@ function renderOverlay(dt) {
   overlayCtx.save();
   overlayCtx.fillStyle = '#7ec8f4';
   for (const p of pts) {
-    overlayCtx.globalAlpha = 0.6 * a;
+    overlayCtx.globalAlpha = 0.6 * aa;
     overlayCtx.beginPath();
     overlayCtx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
     overlayCtx.fill();
@@ -1874,7 +1981,7 @@ function renderOverlay(dt) {
     tp.life -= dt * 2.8;
     if (tp.life <= 0) { trailHistory.splice(i, 1); continue; }
     overlayCtx.save();
-    overlayCtx.globalAlpha = tp.life * 0.30 * a;
+    overlayCtx.globalAlpha = tp.life * 0.30 * aa;
     overlayCtx.fillStyle = '#7ec8f4';
     overlayCtx.beginPath();
     overlayCtx.arc(tp.x, tp.y, 1, 0, Math.PI * 2);
@@ -1899,6 +2006,7 @@ function animate() {
   const now = performance.now();
   const dt = Math.min((now - lastTime) / 1000, 0.05); // cap dt at 50ms
   lastTime = now;
+  readScanAudio(dt);
   animatePoints(dt);
   updateCamera();
   renderer.render(scene, camera);
