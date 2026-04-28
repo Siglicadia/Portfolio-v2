@@ -1665,8 +1665,8 @@ const overlayCtx    = overlayCanvas ? overlayCanvas.getContext('2d') : null;
 let overlayClock   = 0;
 let scanY          = 0;      // leading scanline Y position (px)
 
-const OV_TOTAL   = 28;   // vertices projected for constellation + dots
-const OV_TRAILS  = 7;    // first N of those also emit trail ghosts
+const OV_TOTAL   = 12;   // vertices projected for constellation + dots
+const OV_TRAILS  = 3;    // first N of those also emit trail ghosts
 const CON_DIST   = 170;  // px — max distance for constellation line
 const SCAN_SPD   = 22;   // px / second per scanline sweep
 const SCAN_N     = 3;    // number of scanlines
@@ -1688,7 +1688,7 @@ function ovPickEmitters() {
     ovEmitters.push({
       idx,
       timer:    Math.random() * 0.3,
-      nextJump: 0.05 + Math.random() * 0.25,
+      nextJump: 0.4 + Math.random() * 1.2,
     });
   }
 }
@@ -1723,7 +1723,7 @@ function renderOverlay(dt) {
   if (!currentPoints || ovEmitters.length === 0) return;
 
   // tick emitter timers — jump each to a new random vertex
-  const jumpBase = 0.04 + Math.random() * 0.18;
+  const jumpBase = 0.5 + Math.random() * 1.5;
   for (const e of ovEmitters) {
     e.timer += dt;
     if (e.timer >= e.nextJump) {
@@ -1799,7 +1799,7 @@ function renderOverlay(dt) {
   for (const p of pts) {
     overlayCtx.globalAlpha = 0.4 + Math.random() * 0.6;
     overlayCtx.beginPath();
-    overlayCtx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+    overlayCtx.arc(p.x, p.y, 0.8, 0, Math.PI * 2);
     overlayCtx.fill();
   }
 
