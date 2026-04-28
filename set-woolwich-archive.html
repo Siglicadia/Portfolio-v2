@@ -1423,6 +1423,22 @@ function animatePoints(dt) {
     currentPoints.geometry.attributes.position.needsUpdate = true;
   }
 
+  // ── localised dot distortion ───────────────────────────────────────────────
+  if (noiseActive && ovEmitters.length > 0) {
+    const pos  = currentPoints.geometry.attributes.position.array;
+    const orig = originalPositions;
+    const distScale = spherical.radius * ANIM_SCALE * noiseIntensity * 7;
+    for (const e of ovEmitters) {
+      if (!e.distortVerts) continue;
+      for (const vi of e.distortVerts) {
+        pos[vi*3]   = orig[vi*3]   + (Math.random() - 0.5) * distScale;
+        pos[vi*3+1] = orig[vi*3+1] + (Math.random() - 0.5) * distScale;
+        pos[vi*3+2] = orig[vi*3+2] + (Math.random() - 0.5) * distScale;
+      }
+    }
+    currentPoints.geometry.attributes.position.needsUpdate = true;
+  }
+
 }
 
 // ── noise toggle ───────────────────────────────────────────────────────────
@@ -1674,6 +1690,16 @@ const SCAN_N     = 3;    // number of scanlines
 let ovEmitters   = [];   // {idx, timer, nextJump}
 let trailHistory = [];   // [{x, y, life}]
 
+function pickDistortVerts(centerIdx, n) {
+  const verts = [];
+  const W = 300;
+  for (let i = 0; i < n; i++) {
+    const offset = Math.floor((Math.random() * 2 - 1) * W);
+    verts.push(Math.max(0, Math.min(ovVertexCount - 1, centerIdx + offset)));
+  }
+  return verts;
+}
+
 function ovPickEmitters() {
   if (!originalPositions || ovVertexCount === 0) return;
   ovEmitters   = [];
@@ -1687,8 +1713,9 @@ function ovPickEmitters() {
     const idx = base + Math.floor(Math.random() * range);
     ovEmitters.push({
       idx,
-      timer:    Math.random() * 0.3,
-      nextJump: 0.4 + Math.random() * 1.2,
+      timer:        Math.random() * 0.3,
+      nextJump:     0.4 + Math.random() * 1.2,
+      distortVerts: pickDistortVerts(idx, 40),
     });
   }
 }
@@ -1727,9 +1754,10 @@ function renderOverlay(dt) {
   for (const e of ovEmitters) {
     e.timer += dt;
     if (e.timer >= e.nextJump) {
-      e.timer    = 0;
-      e.nextJump = jumpBase * (0.5 + Math.random());
-      e.idx      = Math.floor(Math.random() * ovVertexCount);
+      e.timer        = 0;
+      e.nextJump     = jumpBase * (0.5 + Math.random());
+      e.idx          = Math.floor(Math.random() * ovVertexCount);
+      e.distortVerts = pickDistortVerts(e.idx, 40);
     }
   }
 
